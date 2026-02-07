@@ -5,7 +5,7 @@
 
 #include "grammar_functor.h"
 
-#include "xgrammar.h"
+#include <xgrammar/xgrammar.h>
 
 #include <bitset>
 #include <cstdint>
@@ -18,7 +18,7 @@
 #include "grammar_impl.h"
 #include "support/encoding.h"
 #include "support/logging.h"
-#include "grammar.h"
+#include "xgrammar/grammar.h"
 
 namespace xgrammar {
 

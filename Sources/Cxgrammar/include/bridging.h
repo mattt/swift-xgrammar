@@ -1,21 +1,30 @@
 /*!
- * \file xgrammar/swift_shims.h
- * \brief Swift-friendly wrappers for C++ APIs.
+ * \file bridging.h
+ * \brief C++ bridging functions for the Swift API layer.
  */
-#ifndef XGRAMMAR_SWIFT_SHIMS_H_
-#define XGRAMMAR_SWIFT_SHIMS_H_
+#ifndef XGRAMMAR_BRIDGING_H_
+#define XGRAMMAR_BRIDGING_H_
 
-#include "compiler.h"
-#include "grammar.h"
-#include "matcher.h"
-#include "tokenizer_info.h"
+#include <xgrammar/compiler.h>
+#include <xgrammar/grammar.h>
+#include <xgrammar/matcher.h>
+#include <xgrammar/tokenizer_info.h>
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
 namespace xgrammar {
-namespace swift_api {
+namespace bridging {
+
+enum class ErrorKind : int32_t {
+  kNone = 0,
+  kDeserializeVersion = 1,
+  kDeserializeFormat = 2,
+  kInvalidJSON = 3,
+  kInvalidStructuralTag = 4,
+  kInvalidJSONSchema = 5,
+  kUnknown = 6
+};
 
 // Fill the next-token bitmask into a raw int32 buffer.
 bool FillNextTokenBitmask(
@@ -26,47 +35,64 @@ bool FillNextTokenBitmask(
     bool debug_print = false
 );
 
-// Deserialize helpers with string error messages instead of std::variant.
 bool GrammarDeserializeJSON(
     const std::string& json_string,
     Grammar* out_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 );
 
 bool TokenizerInfoDeserializeJSON(
     const std::string& json_string,
     TokenizerInfo* out_tokenizer,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 );
 
 bool CompiledGrammarDeserializeJSON(
     const std::string& json_string,
     const TokenizerInfo& tokenizer_info,
     CompiledGrammar* out_compiled_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 );
 
 bool GrammarFromStructuralTag(
     const std::string& structural_tag_json,
     Grammar* out_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 );
 
-Grammar GrammarFromJSONSchemaBasic(
+Grammar GrammarFromJSONSchema(
     const std::string& schema,
     bool any_whitespace,
+    bool has_indent,
+    int indent,
+    bool has_separators,
+    const std::string& separators_item,
+    const std::string& separators_line,
     bool strict_mode,
+    bool has_max_whitespace_cnt,
+    int max_whitespace_cnt,
     bool print_converted_ebnf
 );
 
-CompiledGrammar GrammarCompilerCompileJSONSchemaBasic(
+CompiledGrammar GrammarCompilerCompileJSONSchema(
     GrammarCompiler* compiler,
     const std::string& schema,
     bool any_whitespace,
-    bool strict_mode
+    bool has_indent,
+    int indent,
+    bool has_separators,
+    const std::string& separators_item,
+    const std::string& separators_line,
+    bool strict_mode,
+    bool has_max_whitespace_cnt,
+    int max_whitespace_cnt
 );
 
-TokenizerInfo CreateTokenizerInfoFromArray(
+TokenizerInfo CreateTokenizerInfo(
     const std::string* encoded_vocab,
     int encoded_vocab_count,
     VocabType vocab_type,
@@ -78,7 +104,7 @@ TokenizerInfo CreateTokenizerInfoFromArray(
     bool add_prefix_space
 );
 
-GrammarMatcher CreateGrammarMatcherFromArray(
+GrammarMatcher CreateGrammarMatcher(
     const CompiledGrammar& compiled_grammar,
     const int32_t* override_stop_tokens,
     int override_stop_token_count,
@@ -87,9 +113,9 @@ GrammarMatcher CreateGrammarMatcherFromArray(
     int max_rollback_tokens
 );
 
-Grammar GrammarUnionFromArray(const Grammar* grammars, int grammar_count);
+Grammar GrammarUnion(const Grammar* grammars, int grammar_count);
 
-Grammar GrammarConcatFromArray(const Grammar* grammars, int grammar_count);
+Grammar GrammarConcat(const Grammar* grammars, int grammar_count);
 
 int TokenizerInfoDecodedVocabCount(const TokenizerInfo& tokenizer_info);
 
@@ -105,7 +131,7 @@ int32_t TokenizerInfoSpecialTokenIdAt(const TokenizerInfo& tokenizer_info, int i
 
 int GrammarMatcherStopTokenIdsCount(const GrammarMatcher& matcher);
 
-int GrammarMatcherStopTokenIdAt(const GrammarMatcher& matcher, int index);
+int32_t GrammarMatcherStopTokenIdAt(const GrammarMatcher& matcher, int index);
 
 TokenizerInfo TokenizerInfoFromVocabAndMetadata(
     const std::string* encoded_vocab,
@@ -113,7 +139,7 @@ TokenizerInfo TokenizerInfoFromVocabAndMetadata(
     const std::string& metadata
 );
 
-}  // namespace swift_api
+}  // namespace bridging
 }  // namespace xgrammar
 
-#endif  // XGRAMMAR_SWIFT_SHIMS_H_
+#endif  // XGRAMMAR_BRIDGING_H_

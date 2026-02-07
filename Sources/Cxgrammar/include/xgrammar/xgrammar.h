@@ -7,11 +7,11 @@
 #ifndef XGRAMMAR_XGRAMMAR_H_
 #define XGRAMMAR_XGRAMMAR_H_
 
-#include "compiler.h"
-#include "config.h"
-#include "exception.h"
-#include "grammar.h"
-#include "matcher.h"
-#include "tokenizer_info.h"
+#include <xgrammar/compiler.h>
+#include <xgrammar/config.h>
+#include <xgrammar/exception.h>
+#include <xgrammar/grammar.h>
+#include <xgrammar/matcher.h>
+#include <xgrammar/tokenizer_info.h>
 
 #endif  // XGRAMMAR_XGRAMMAR_H_

@@ -1,23 +1,50 @@
 /*!
- * \file swift_shims.cc
- * \brief Swift-friendly wrappers for C++ APIs.
+ * \file bridging.cc
+ * \brief C++ bridging functions for the Swift API layer.
  */
-#include "swift_shims.h"
+#include "bridging.h"
 
-#include "dlpack.h"
-#include "object.h"
+#include <dlpack/dlpack.h>
+#include <xgrammar/exception.h>
+#include <xgrammar/object.h>
 
 #include <optional>
 #include <variant>
 
 namespace xgrammar {
-namespace swift_api {
+namespace bridging {
 
 namespace {
 
 template <typename VariantType>
 std::string VariantErrorToString(const VariantType& error) {
   return std::visit([](const auto& err) { return std::string(err.what()); }, error);
+}
+
+ErrorKind ErrorKindFromSerializationError(const SerializationError& error) {
+  if (std::holds_alternative<DeserializeVersionError>(error)) {
+    return ErrorKind::kDeserializeVersion;
+  }
+  if (std::holds_alternative<DeserializeFormatError>(error)) {
+    return ErrorKind::kDeserializeFormat;
+  }
+  if (std::holds_alternative<InvalidJSONError>(error)) {
+    return ErrorKind::kInvalidJSON;
+  }
+  return ErrorKind::kUnknown;
+}
+
+ErrorKind ErrorKindFromStructuralTagError(const StructuralTagError& error) {
+  if (std::holds_alternative<InvalidJSONError>(error)) {
+    return ErrorKind::kInvalidJSON;
+  }
+  if (std::holds_alternative<InvalidJSONSchemaError>(error)) {
+    return ErrorKind::kInvalidJSONSchema;
+  }
+  if (std::holds_alternative<InvalidStructuralTagError>(error)) {
+    return ErrorKind::kInvalidStructuralTag;
+  }
+  return ErrorKind::kUnknown;
 }
 
 }  // namespace
@@ -49,18 +76,26 @@ bool FillNextTokenBitmask(
 bool GrammarDeserializeJSON(
     const std::string& json_string,
     Grammar* out_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 ) {
   auto result = Grammar::DeserializeJSON(json_string);
   if (std::holds_alternative<Grammar>(result)) {
     if (out_grammar != nullptr) {
       *out_grammar = std::get<Grammar>(result);
     }
+    if (out_error_kind != nullptr) {
+      *out_error_kind = ErrorKind::kNone;
+    }
     return true;
   }
 
+  const auto& error = std::get<SerializationError>(result);
   if (out_error != nullptr) {
-    *out_error = VariantErrorToString(std::get<SerializationError>(result));
+    *out_error = VariantErrorToString(error);
+  }
+  if (out_error_kind != nullptr) {
+    *out_error_kind = ErrorKindFromSerializationError(error);
   }
   return false;
 }
@@ -68,18 +103,26 @@ bool GrammarDeserializeJSON(
 bool TokenizerInfoDeserializeJSON(
     const std::string& json_string,
     TokenizerInfo* out_tokenizer,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 ) {
   auto result = TokenizerInfo::DeserializeJSON(json_string);
   if (std::holds_alternative<TokenizerInfo>(result)) {
     if (out_tokenizer != nullptr) {
       *out_tokenizer = std::get<TokenizerInfo>(result);
     }
+    if (out_error_kind != nullptr) {
+      *out_error_kind = ErrorKind::kNone;
+    }
     return true;
   }
 
+  const auto& error = std::get<SerializationError>(result);
   if (out_error != nullptr) {
-    *out_error = VariantErrorToString(std::get<SerializationError>(result));
+    *out_error = VariantErrorToString(error);
+  }
+  if (out_error_kind != nullptr) {
+    *out_error_kind = ErrorKindFromSerializationError(error);
   }
   return false;
 }
@@ -88,18 +131,26 @@ bool CompiledGrammarDeserializeJSON(
     const std::string& json_string,
     const TokenizerInfo& tokenizer_info,
     CompiledGrammar* out_compiled_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 ) {
   auto result = CompiledGrammar::DeserializeJSON(json_string, tokenizer_info);
   if (std::holds_alternative<CompiledGrammar>(result)) {
     if (out_compiled_grammar != nullptr) {
       *out_compiled_grammar = std::get<CompiledGrammar>(result);
     }
+    if (out_error_kind != nullptr) {
+      *out_error_kind = ErrorKind::kNone;
+    }
     return true;
   }
 
+  const auto& error = std::get<SerializationError>(result);
   if (out_error != nullptr) {
-    *out_error = VariantErrorToString(std::get<SerializationError>(result));
+    *out_error = VariantErrorToString(error);
+  }
+  if (out_error_kind != nullptr) {
+    *out_error_kind = ErrorKindFromSerializationError(error);
   }
   return false;
 }
@@ -107,54 +158,100 @@ bool CompiledGrammarDeserializeJSON(
 bool GrammarFromStructuralTag(
     const std::string& structural_tag_json,
     Grammar* out_grammar,
-    std::string* out_error
+    std::string* out_error,
+    ErrorKind* out_error_kind
 ) {
   auto result = Grammar::FromStructuralTag(structural_tag_json);
   if (std::holds_alternative<Grammar>(result)) {
     if (out_grammar != nullptr) {
       *out_grammar = std::get<Grammar>(result);
     }
+    if (out_error_kind != nullptr) {
+      *out_error_kind = ErrorKind::kNone;
+    }
     return true;
   }
 
+  const auto& error = std::get<StructuralTagError>(result);
   if (out_error != nullptr) {
-    *out_error = VariantErrorToString(std::get<StructuralTagError>(result));
+    *out_error = VariantErrorToString(error);
+  }
+  if (out_error_kind != nullptr) {
+    *out_error_kind = ErrorKindFromStructuralTagError(error);
   }
   return false;
 }
 
-Grammar GrammarFromJSONSchemaBasic(
+Grammar GrammarFromJSONSchema(
     const std::string& schema,
     bool any_whitespace,
+    bool has_indent,
+    int indent,
+    bool has_separators,
+    const std::string& separators_item,
+    const std::string& separators_line,
     bool strict_mode,
+    bool has_max_whitespace_cnt,
+    int max_whitespace_cnt,
     bool print_converted_ebnf
 ) {
+  std::optional<int> indent_opt =
+      has_indent ? std::optional<int>(indent) : std::nullopt;
+  std::optional<std::pair<std::string, std::string>> separators_opt = std::nullopt;
+  if (has_separators) {
+    separators_opt = std::make_pair(separators_item, separators_line);
+  }
+  std::optional<int> max_whitespace_opt =
+      has_max_whitespace_cnt ? std::optional<int>(max_whitespace_cnt) : std::nullopt;
+
   return Grammar::FromJSONSchema(
       schema,
       any_whitespace,
-      std::nullopt,
-      std::nullopt,
+      indent_opt,
+      separators_opt,
       strict_mode,
-      std::nullopt,
+      max_whitespace_opt,
       print_converted_ebnf
   );
 }
 
-CompiledGrammar GrammarCompilerCompileJSONSchemaBasic(
+CompiledGrammar GrammarCompilerCompileJSONSchema(
     GrammarCompiler* compiler,
     const std::string& schema,
     bool any_whitespace,
-    bool strict_mode
+    bool has_indent,
+    int indent,
+    bool has_separators,
+    const std::string& separators_item,
+    const std::string& separators_line,
+    bool strict_mode,
+    bool has_max_whitespace_cnt,
+    int max_whitespace_cnt
 ) {
   if (compiler == nullptr) {
     return CompiledGrammar(NullObj{});
   }
+
+  std::optional<int> indent_opt =
+      has_indent ? std::optional<int>(indent) : std::nullopt;
+  std::optional<std::pair<std::string, std::string>> separators_opt = std::nullopt;
+  if (has_separators) {
+    separators_opt = std::make_pair(separators_item, separators_line);
+  }
+  std::optional<int> max_whitespace_opt =
+      has_max_whitespace_cnt ? std::optional<int>(max_whitespace_cnt) : std::nullopt;
+
   return compiler->CompileJSONSchema(
-      schema, any_whitespace, std::nullopt, std::nullopt, strict_mode, std::nullopt
+      schema,
+      any_whitespace,
+      indent_opt,
+      separators_opt,
+      strict_mode,
+      max_whitespace_opt
   );
 }
 
-TokenizerInfo CreateTokenizerInfoFromArray(
+TokenizerInfo CreateTokenizerInfo(
     const std::string* encoded_vocab,
     int encoded_vocab_count,
     VocabType vocab_type,
@@ -185,7 +282,7 @@ TokenizerInfo CreateTokenizerInfoFromArray(
   return TokenizerInfo(encoded_vector, vocab_type, vocab_size_opt, stop_tokens_opt, add_prefix_space);
 }
 
-GrammarMatcher CreateGrammarMatcherFromArray(
+GrammarMatcher CreateGrammarMatcher(
     const CompiledGrammar& compiled_grammar,
     const int32_t* override_stop_tokens,
     int override_stop_token_count,
@@ -207,7 +304,7 @@ GrammarMatcher CreateGrammarMatcherFromArray(
   );
 }
 
-Grammar GrammarUnionFromArray(const Grammar* grammars, int grammar_count) {
+Grammar GrammarUnion(const Grammar* grammars, int grammar_count) {
   std::vector<Grammar> grammar_vector;
   if (grammars != nullptr && grammar_count > 0) {
     grammar_vector.assign(grammars, grammars + grammar_count);
@@ -215,7 +312,7 @@ Grammar GrammarUnionFromArray(const Grammar* grammars, int grammar_count) {
   return Grammar::Union(grammar_vector);
 }
 
-Grammar GrammarConcatFromArray(const Grammar* grammars, int grammar_count) {
+Grammar GrammarConcat(const Grammar* grammars, int grammar_count) {
   std::vector<Grammar> grammar_vector;
   if (grammars != nullptr && grammar_count > 0) {
     grammar_vector.assign(grammars, grammars + grammar_count);
@@ -283,5 +380,5 @@ TokenizerInfo TokenizerInfoFromVocabAndMetadata(
   return TokenizerInfo::FromVocabAndMetadata(encoded_vector, metadata);
 }
 
-}  // namespace swift_api
+}  // namespace bridging
 }  // namespace xgrammar

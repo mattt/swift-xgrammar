@@ -7,7 +7,7 @@
 #ifndef XGRAMMAR_GRAMMAR_H_
 #define XGRAMMAR_GRAMMAR_H_
 
-#include "object.h"
+#include <xgrammar/object.h>
 
 #include <optional>
 #include <stdexcept>
@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 
-#include "exception.h"
+#include "xgrammar/exception.h"
 
 namespace xgrammar {
 

@@ -3,7 +3,7 @@
  * \file xgrammar/config.cc
  */
 
-#include "config.h"
+#include <xgrammar/config.h>
 
 #include "support/json_serializer.h"
 #include "support/recursion_guard.h"

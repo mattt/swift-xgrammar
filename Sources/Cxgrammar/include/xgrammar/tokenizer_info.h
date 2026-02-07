@@ -7,7 +7,7 @@
 #ifndef XGRAMMAR_TOKENIZER_INFO_H_
 #define XGRAMMAR_TOKENIZER_INFO_H_
 
-#include "object.h"
+#include <xgrammar/object.h>
 
 #include <cstdint>
 #include <optional>
@@ -15,7 +15,7 @@
 #include <variant>
 #include <vector>
 
-#include "exception.h"
+#include "xgrammar/exception.h"
 
 namespace xgrammar {
 
