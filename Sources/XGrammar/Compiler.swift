@@ -24,14 +24,18 @@ extension Grammar {
         public var grammar: Grammar {
             Grammar(
                 handle: Grammar.Handle(
-                    xgrammar_compiled_grammar_get_grammar(handle.pointer)))
+                    xgrammar_compiled_grammar_get_grammar(handle.pointer)
+                )
+            )
         }
 
         /// The tokenizer info used for compilation.
         public var tokenizerInfo: TokenizerInfo {
             TokenizerInfo(
                 handle: TokenizerInfo.Handle(
-                    xgrammar_compiled_grammar_get_tokenizer_info(handle.pointer)))
+                    xgrammar_compiled_grammar_get_tokenizer_info(handle.pointer)
+                )
+            )
         }
 
         /// Estimated memory usage of the compiled grammar, in bytes.
@@ -103,7 +107,9 @@ extension Grammar {
             }
             let compiled = Compiled(
                 handle: Compiled.Handle(
-                    xgrammar_compiler_compile_builtin_json(handle.pointer)))
+                    xgrammar_compiler_compile_builtin_json(handle.pointer)
+                )
+            )
             compiledJSONCache = compiled
             return compiled
         }
@@ -132,14 +138,17 @@ extension Grammar {
                     Int32(maximumThreadCount),
                     cachingEnabled,
                     Int64(cacheSizeLimit ?? -1)
-                ))
+                )
+            )
         }
 
         /// Compiles a grammar into a compiled grammar.
         public func compile(_ grammar: Grammar) -> Compiled {
             Compiled(
                 handle: Compiled.Handle(
-                    xgrammar_compiler_compile_grammar(handle.pointer, grammar.handle.pointer)))
+                    xgrammar_compiler_compile_grammar(handle.pointer, grammar.handle.pointer)
+                )
+            )
         }
 
         /// Compiles a JSON schema into a compiled grammar.
@@ -167,7 +176,8 @@ extension Grammar {
                         hasMaxWhitespace,
                         Int32(formatting.maximumWhitespaceCount ?? 0)
                     )
-                ))
+                )
+            )
         }
 
         /// Cache metrics and controls for a compiler.

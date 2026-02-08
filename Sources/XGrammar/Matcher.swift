@@ -68,11 +68,13 @@ extension Grammar {
                 let targetVocabSize = vocabSize ?? self.vocabSize
                 precondition(targetVocabSize > 0, "Vocab size must be positive.")
                 precondition(
-                    logits.count >= targetVocabSize, "Logits length is smaller than vocab size.")
+                    logits.count >= targetVocabSize,
+                    "Logits length is smaller than vocab size."
+                )
                 guard !storage.isEmpty else { return }
 
                 let limit = min(targetVocabSize, self.vocabSize)
-                for tokenId in 0..<limit {
+                for tokenId in 0 ..< limit {
                     if !isTokenAllowed(tokenId, batchIndex: 0) {
                         logits[tokenId] = -Float.infinity
                     }
@@ -101,7 +103,7 @@ extension Grammar {
             let count = Int(xgrammar_matcher_stop_token_ids_count(handle.pointer))
             var result: [Int32] = []
             result.reserveCapacity(count)
-            for index in 0..<count {
+            for index in 0 ..< count {
                 result.append(
                     xgrammar_matcher_stop_token_id_at(handle.pointer, Int32(index))
                 )

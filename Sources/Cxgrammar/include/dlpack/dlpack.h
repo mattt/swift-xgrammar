@@ -32,8 +32,8 @@
 #define DLPACK_DLL
 #endif
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -191,7 +191,8 @@ typedef enum {
  *   - float4(vectorized 4 float): type_code = 2, bits = 32, lanes = 4
  *   - int8: type_code = 0, bits = 8, lanes = 1
  *   - std::complex<float>: type_code = 5, bits = 64, lanes = 1
- *   - bool: type_code = 6, bits = 8, lanes = 1 (as per common array library convention, the underlying storage size of bool is 8 bits)
+ *   - bool: type_code = 6, bits = 8, lanes = 1 (as per common array library convention, the
+ * underlying storage size of bool is 8 bits)
  *   - float8_e4m3: type_code = 8, bits = 8, lanes = 1 (packed in memory)
  *   - float6_e3m2fn: type_code = 16, bits = 6, lanes = 1 (packed in memory)
  *   - float4_e2m1fn: type_code = 17, bits = 4, lanes = 1 (packed in memory)
@@ -297,14 +298,14 @@ typedef struct DLManagedTensor {
   /*! \brief the context of the original host framework of DLManagedTensor in
    *   which DLManagedTensor is used in the framework. It can also be NULL.
    */
-  void * manager_ctx;
+  void* manager_ctx;
   /*!
    * \brief Destructor - this should be called
    * to destruct the manager_ctx  which backs the DLManagedTensor. It can be
    * NULL if there is no way for the caller to provide a reasonable destructor.
    * The destructor deletes the argument self as well.
    */
-  void (*deleter)(struct DLManagedTensor * self);
+  void (*deleter)(struct DLManagedTensor* self);
 } DLManagedTensor;
 
 // bit masks used in the DLManagedTensorVersioned
@@ -349,7 +350,7 @@ typedef struct DLManagedTensorVersioned {
    * Stores DLManagedTensorVersioned is used in the
    * framework. It can also be NULL.
    */
-  void *manager_ctx;
+  void* manager_ctx;
   /*!
    * \brief Destructor.
    *
@@ -357,7 +358,7 @@ typedef struct DLManagedTensorVersioned {
    * It can be NULL if there is no way for the caller to provide a reasonable
    * destructor. The destructor deletes the argument self as well.
    */
-  void (*deleter)(struct DLManagedTensorVersioned *self);
+  void (*deleter)(struct DLManagedTensorVersioned* self);
   /*!
    * \brief Additional bitmask flags information about the tensor.
    *

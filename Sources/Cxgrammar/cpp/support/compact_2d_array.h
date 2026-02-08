@@ -190,7 +190,8 @@ class Compact2DArray {
 };
 
 template <typename DataType>
-inline typename Compact2DArray<DataType>::Row Compact2DArray<DataType>::operator[](int32_t i
+inline typename Compact2DArray<DataType>::Row Compact2DArray<DataType>::operator[](
+    int32_t i
 ) const {
   XGRAMMAR_DCHECK(i >= 0 && i < size()) << "Compact2DArray index " << i << " is out of bound";
   int32_t start = indptr_[i];

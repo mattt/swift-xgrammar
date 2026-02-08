@@ -75,11 +75,14 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
             let count = Int(xgrammar_tokenizer_info_decoded_vocab_count(handle.pointer))
             var result: [String] = []
             result.reserveCapacity(count)
-            for index in 0..<count {
+            for index in 0 ..< count {
                 result.append(
                     consumeCString(
                         xgrammar_tokenizer_info_decoded_vocab_at(
-                            handle.pointer, Int32(index)))
+                            handle.pointer,
+                            Int32(index)
+                        )
+                    )
                 )
             }
             return result
@@ -115,7 +118,8 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
                 }
                 defer { index += 1 }
                 return consumeCString(
-                    xgrammar_tokenizer_info_decoded_vocab_at(handle.pointer, Int32(index)))
+                    xgrammar_tokenizer_info_decoded_vocab_at(handle.pointer, Int32(index))
+                )
             }
         }
     }
@@ -140,7 +144,7 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
         let count = Int(xgrammar_tokenizer_info_stop_token_ids_count(handle.pointer))
         var result: [Int32] = []
         result.reserveCapacity(count)
-        for index in 0..<count {
+        for index in 0 ..< count {
             result.append(
                 xgrammar_tokenizer_info_stop_token_id_at(handle.pointer, Int32(index))
             )
@@ -153,7 +157,7 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
         let count = Int(xgrammar_tokenizer_info_special_token_ids_count(handle.pointer))
         var result: [Int32] = []
         result.reserveCapacity(count)
-        for index in 0..<count {
+        for index in 0 ..< count {
             result.append(
                 xgrammar_tokenizer_info_special_token_id_at(handle.pointer, Int32(index))
             )
@@ -209,7 +213,9 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
         var errorMessage: UnsafeMutablePointer<CChar>?
         guard
             let ptr = xgrammar_tokenizer_info_create_from_serialized_json(
-                json, &errorKind, &errorMessage
+                json,
+                &errorKind,
+                &errorMessage
             )
         else {
             let message = consumeCString(errorMessage)
@@ -222,7 +228,9 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
     public init(encodedVocab: [String], metadata: String) {
         let ptr = withCStringArray(encodedVocab) { vocabPtr, vocabCount in
             xgrammar_tokenizer_info_create_from_vocab_and_metadata(
-                vocabPtr, vocabCount, metadata
+                vocabPtr,
+                vocabCount,
+                metadata
             )
         }
         self.handle = Handle(ptr!)

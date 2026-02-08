@@ -140,7 +140,8 @@ void ApplyMask16Bits(
       kMinusInfinity = kMinusInfinityFp16;
       break;
     default:
-      XGRAMMAR_LOG(FATAL
+      XGRAMMAR_LOG(
+          FATAL
       ) << "The provided logits's dtype is not valid: should be bfloat16 or float16";
   }
   std::pair<int, int> logits_shape =
@@ -225,7 +226,8 @@ void ApplyTokenBitmaskInplaceCPU(
   } else if (logits->dtype.bits == 16) {
     ApplyMask16Bits(logits, bitmask, vocab_size, indices);
   } else {
-    XGRAMMAR_LOG(FATAL
+    XGRAMMAR_LOG(
+        FATAL
     ) << "The provided logits's dtype is not valid: should be float32 or float16/bfloat16";
   }
 }
@@ -1049,9 +1051,14 @@ GrammarMatcher::GrammarMatcher(
     bool terminate_without_stop_token,
     int max_rollback_tokens
 )
-    : pimpl_(std::make_shared<GrammarMatcher::Impl>(
-          compiled_grammar, override_stop_tokens, terminate_without_stop_token, max_rollback_tokens
-      )) {}
+    : pimpl_(
+          std::make_shared<GrammarMatcher::Impl>(
+              compiled_grammar,
+              override_stop_tokens,
+              terminate_without_stop_token,
+              max_rollback_tokens
+          )
+      ) {}
 
 bool GrammarMatcher::AcceptToken(int32_t token_id, bool debug_print) {
   return pimpl_->AcceptToken(token_id, debug_print);

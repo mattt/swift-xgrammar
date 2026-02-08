@@ -185,8 +185,9 @@ struct has_deserialize_json_global : std::false_type {};
 template <typename T>
 struct has_deserialize_json_global<
     T,
-    std::void_t<decltype(DeserializeJSONValue(std::declval<T*>(), picojson::value{}, std::string{})
-    )>> : std::true_type {
+    std::void_t<
+        decltype(DeserializeJSONValue(std::declval<T*>(), picojson::value{}, std::string{}))>>
+    : std::true_type {
   static_assert(
       std::is_same_v<
           decltype(DeserializeJSONValue(std::declval<T*>(), picojson::value{}, std::string{})),

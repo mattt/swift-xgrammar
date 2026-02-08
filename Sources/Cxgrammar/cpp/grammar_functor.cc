@@ -303,8 +303,9 @@ class StructureNormalizerImpl : public GrammarMutator {
       case GrammarExprType::kCharacterClassStar:
       case GrammarExprType::kRuleRef:
       case GrammarExprType::kRepeat:
-        return builder_->AddChoices({builder_->AddSequence({builder_->AddGrammarExpr(grammar_expr)})
-        });
+        return builder_->AddChoices(
+            {builder_->AddSequence({builder_->AddGrammarExpr(grammar_expr)})}
+        );
       case GrammarExprType::kTagDispatch:
         return VisitTagDispatch(grammar_expr);
       default:
@@ -1018,7 +1019,8 @@ class GrammarFSMBuilderImpl {
 
     // Compress to compact fsm
     CompactFSM compact_complete_fsm = complete_fsm.ToCompact();
-    std::vector<std::optional<CompactFSMWithStartEnd>> compact_per_rule_fsms((*grammar)->NumRules()
+    std::vector<std::optional<CompactFSMWithStartEnd>> compact_per_rule_fsms(
+        (*grammar)->NumRules()
     );
     for (int i = 0; i < (*grammar)->NumRules(); ++i) {
       if (per_rule_fsms[i]) {
@@ -1703,7 +1705,8 @@ class RootRuleRenamerImpl {
           grammar_copy->GetRule(root_name_rule_id).name = new_rule_name;
           break;
         }
-        XGRAMMAR_DCHECK(false
+        XGRAMMAR_DCHECK(
+            false
         ) << "The rule must be renamed successfully after (n + 1) times of iterations.";
       }
     }

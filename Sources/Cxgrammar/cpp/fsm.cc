@@ -78,7 +78,8 @@ class FSMImplBase {
 };
 
 template <typename ContainerType>
-std::string FSMImplBase<ContainerType>::EdgesToString(std::optional<std::vector<int>> states
+std::string FSMImplBase<ContainerType>::EdgesToString(
+    std::optional<std::vector<int>> states
 ) const {
   std::string result = "[\n";
   auto f_print_one = [&, this](int i) {
@@ -627,8 +628,9 @@ void CompactFSM::GetEpsilonClosure(std::unordered_set<int>* state_set) const {
   pimpl_->GetEpsilonClosure(state_set);
 }
 
-void CompactFSM::GetReachableStates(const std::vector<int>& from, std::unordered_set<int>* result)
-    const {
+void CompactFSM::GetReachableStates(
+    const std::vector<int>& from, std::unordered_set<int>* result
+) const {
   pimpl_->GetReachableStates(from, result);
 }
 

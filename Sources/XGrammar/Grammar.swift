@@ -88,7 +88,8 @@ public struct Grammar: @unchecked Sendable {
                 hasMaxWhitespace,
                 Int32(formatting.maximumWhitespaceCount ?? 0),
                 false
-            ))
+            )
+        )
     }
 
     /// Creates a grammar from a structural tag JSON definition.
@@ -97,7 +98,9 @@ public struct Grammar: @unchecked Sendable {
         var errorMessage: UnsafeMutablePointer<CChar>?
         guard
             let ptr = xgrammar_grammar_create_from_structural_tag(
-                json, &errorKind, &errorMessage
+                json,
+                &errorKind,
+                &errorMessage
             )
         else {
             let message = consumeCString(errorMessage)
@@ -115,7 +118,9 @@ public struct Grammar: @unchecked Sendable {
         var errorMessage: UnsafeMutablePointer<CChar>?
         guard
             let ptr = xgrammar_grammar_create_from_serialized_json(
-                json, &errorKind, &errorMessage
+                json,
+                &errorKind,
+                &errorMessage
             )
         else {
             let message = consumeCString(errorMessage)

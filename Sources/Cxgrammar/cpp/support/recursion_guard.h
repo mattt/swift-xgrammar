@@ -62,7 +62,8 @@ class RecursionGuard {
    */
   static void SetMaxRecursionDepth(int max_depth) {
     if (max_depth <= 0 || max_depth > kMaxReasonableDepth) {
-      XGRAMMAR_LOG(FATAL
+      XGRAMMAR_LOG(
+          FATAL
       ) << "RecursionGuard: Maximum recursion depth must be positive and less than "
         << kMaxReasonableDepth << ", got: " << max_depth;
     }

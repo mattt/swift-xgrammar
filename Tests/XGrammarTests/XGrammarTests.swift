@@ -11,7 +11,7 @@ private func allowedTokenIndices(
     var result: [Int] = []
     let wordsPerBatch = bitmask.wordsPerBatch
     let baseOffset = batchIndex * wordsPerBatch
-    for tokenId in 0..<vocabSize {
+    for tokenId in 0 ..< vocabSize {
         let wordIndex = tokenId / 32
         let bitIndex = tokenId % 32
         let storageIndex = baseOffset + wordIndex
@@ -101,8 +101,8 @@ private func allowedTokenIndices(
     bitmask.storage[0] = 0
     var logits = Array(repeating: Float(1.0), count: 64)
     bitmask.maskLogits(&logits, vocabSize: 32)
-    #expect(logits[0..<32].allSatisfy { $0 == -Float.infinity })
-    #expect(logits[32..<64].allSatisfy { $0 == 1.0 })
+    #expect(logits[0 ..< 32].allSatisfy { $0 == -Float.infinity })
+    #expect(logits[32 ..< 64].allSatisfy { $0 == 1.0 })
 }
 
 @Test func matcherFillsBitmask() async throws {

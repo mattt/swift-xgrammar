@@ -1850,12 +1850,14 @@ std::string JSONSchemaConverter::VisitInteger(
       static const double PROBLEMATIC_MAX = 9223372036854776000.0;
 
       if (val == PROBLEMATIC_MIN) {
-        XGRAMMAR_CHECK(false
+        XGRAMMAR_CHECK(
+            false
         ) << "Integer exceeds minimum limit due to precision loss at 64-bit boundary";
       }
 
       if (val == PROBLEMATIC_MAX) {
-        XGRAMMAR_CHECK(false
+        XGRAMMAR_CHECK(
+            false
         ) << "Integer exceeds maximum limit due to precision loss at 64-bit boundary";
       }
 
@@ -2164,9 +2166,11 @@ Result<JSONSchemaConverter::ArraySpec, SchemaError> JSONSchemaConverter::ParseAr
     }
   }
 
-  return ResultOk(ArraySpec{
-      prefix_item_schemas, allow_additional_items, additional_item_schema, min_items, max_items
-  });
+  return ResultOk(
+      ArraySpec{
+          prefix_item_schemas, allow_additional_items, additional_item_schema, min_items, max_items
+      }
+  );
 }
 
 std::string JSONSchemaConverter::VisitArray(
@@ -2423,7 +2427,8 @@ std::string JSONSchemaConverter::GetPartialRuleForProperties(
   std::vector<std::string> prop_patterns;
   int64_t idx = 0;  // Changed to int64_t
   for (const auto& [prop_name, prop_schema] : properties) {
-    prop_patterns.push_back(GetPropertyPattern(prop_name, prop_schema, rule_name, idx, json_format)
+    prop_patterns.push_back(
+        GetPropertyPattern(prop_name, prop_schema, rule_name, idx, json_format)
     );
     ++idx;
   }
@@ -2960,18 +2965,20 @@ Result<JSONSchemaConverter::ObjectSpec, SchemaError> JSONSchemaConverter::ParseO
     );
   }
 
-  return ResultOk(ObjectSpec{
-      properties,
-      pattern_properties,
-      allow_additional_properties,
-      additional_properties_schema,
-      allow_unevaluated_properties,
-      unevaluated_properties_schema,
-      required_properties,
-      property_names,
-      min_properties,
-      max_properties
-  });
+  return ResultOk(
+      ObjectSpec{
+          properties,
+          pattern_properties,
+          allow_additional_properties,
+          additional_properties_schema,
+          allow_unevaluated_properties,
+          unevaluated_properties_schema,
+          required_properties,
+          property_names,
+          min_properties,
+          max_properties
+      }
+  );
 }
 
 Result<JSONSchemaConverter::StringSpec, SchemaError> JSONSchemaConverter::ParseStringSchema(
