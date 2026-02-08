@@ -24,14 +24,12 @@ let package = Package(
                 .define("XGRAMMAR_ENABLE_INTERNAL_CHECK", to: "0"),
                 .headerSearchPath("include"),
                 .headerSearchPath("cpp"),
+                .unsafeFlags(["-std=c++17"]),
             ]
         ),
         .target(
             name: "XGrammar",
-            dependencies: ["Cxgrammar"],
-            swiftSettings: [
-                .interoperabilityMode(.Cxx)
-            ]
+            dependencies: ["Cxgrammar"]
         ),
         .testTarget(
             name: "XGrammarTests",
@@ -40,6 +38,5 @@ let package = Package(
                 .interoperabilityMode(.Cxx)
             ]
         ),
-    ],
-    cxxLanguageStandard: .cxx17
+    ]
 )

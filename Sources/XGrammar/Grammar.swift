@@ -1,8 +1,5 @@
 import Cxgrammar
-import CxxStdlib
 import Foundation
-
-typealias CxxGrammar = xgrammar.Grammar
 
 /// An abstract syntax tree (AST) for an EBNF grammar used to constrain text generation.
 ///
@@ -13,35 +10,38 @@ typealias CxxGrammar = xgrammar.Grammar
 /// Use `Grammar.Compiled` and `Grammar.Matcher` to apply a grammar to a specific tokenizer
 /// and to constrain token-by-token decoding.
 public struct Grammar: @unchecked Sendable {
-    var raw: CxxGrammar
+    let handle: Handle
+
+    /// ARC-managed wrapper around the opaque C handle.
+    final class Handle: @unchecked Sendable {
+        let pointer: OpaquePointer
+        init(_ pointer: OpaquePointer) { self.pointer = pointer }
+        deinit { xgrammar_grammar_destroy(pointer) }
+    }
+
+    init(handle: Handle) {
+        self.handle = handle
+    }
 
     /// The built-in JSON grammar.
-    public static let json = Grammar(raw: CxxGrammar.BuiltinJSONGrammar())
+    public static let json = Grammar(handle: Handle(xgrammar_grammar_create_builtin_json()))
 
     /// Returns a grammar that matches any of the provided grammars.
     public static func anyOf(_ grammars: [Grammar]) -> Grammar {
-        let rawGrammars = grammars.map { $0.raw }
-        return rawGrammars.withUnsafeBufferPointer { buffer in
-            Grammar(
-                raw: xgrammar.bridging.GrammarUnion(
-                    buffer.baseAddress,
-                    Int32(buffer.count)
-                )
-            )
+        var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
+        let result = handles.withUnsafeMutableBufferPointer { buf in
+            xgrammar_grammar_create_union(buf.baseAddress, Int32(buf.count))
         }
+        return Grammar(handle: Handle(result!))
     }
 
     /// Returns a grammar that matches the concatenation of the provided grammars.
     public static func sequence(_ grammars: [Grammar]) -> Grammar {
-        let rawGrammars = grammars.map { $0.raw }
-        return rawGrammars.withUnsafeBufferPointer { buffer in
-            Grammar(
-                raw: xgrammar.bridging.GrammarConcat(
-                    buffer.baseAddress,
-                    Int32(buffer.count)
-                )
-            )
+        var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
+        let result = handles.withUnsafeMutableBufferPointer { buf in
+            xgrammar_grammar_create_concat(buf.baseAddress, Int32(buf.count))
         }
+        return Grammar(handle: Handle(result!))
     }
 
     /// Creates a grammar from an EBNF string.
@@ -50,14 +50,14 @@ public struct Grammar: @unchecked Sendable {
     ///   - ebnf: An EBNF-formatted grammar definition.
     ///   - rootRule: The name of the root rule.
     public init(ebnf: String, rootRule: String = "root") {
-        self.raw = CxxGrammar.FromEBNF(std.string(ebnf), std.string(rootRule))
+        self.handle = Handle(xgrammar_grammar_create_from_ebnf(ebnf, rootRule))
     }
 
     /// Creates a grammar from a regex pattern.
     ///
     /// The regex is converted to EBNF internally.
     public init(regex: String) {
-        self.raw = CxxGrammar.FromRegex(std.string(regex), false)
+        self.handle = Handle(xgrammar_grammar_create_from_regex(regex))
     }
 
     /// Creates a grammar from a JSON schema string.
@@ -75,36 +75,38 @@ public struct Grammar: @unchecked Sendable {
         let hasSeparators = formatting.separators != nil
         let hasMaxWhitespace = formatting.maximumWhitespaceCount != nil
         let separatorsValue = formatting.separators ?? ("", "")
-        self.raw = xgrammar.bridging.GrammarFromJSONSchema(
-            std.string(jsonSchema),
-            formatting.allowsFlexibleWhitespace,
-            hasIndentation,
-            Int32(formatting.indentation ?? 0),
-            hasSeparators,
-            std.string(separatorsValue.itemSeparator),
-            std.string(separatorsValue.keyValueSeparator),
-            strictMode,
-            hasMaxWhitespace,
-            Int32(formatting.maximumWhitespaceCount ?? 0),
-            false
+        self.handle = Handle(
+            xgrammar_grammar_create_from_json_schema(
+                jsonSchema,
+                formatting.allowsFlexibleWhitespace,
+                hasIndentation,
+                Int32(formatting.indentation ?? 0),
+                hasSeparators,
+                separatorsValue.itemSeparator,
+                separatorsValue.keyValueSeparator,
+                strictMode,
+                hasMaxWhitespace,
+                Int32(formatting.maximumWhitespaceCount ?? 0),
+                false
+            )
         )
     }
 
     /// Creates a grammar from a structural tag JSON definition.
     public init(structuralTag json: String) throws {
-        var result = CxxGrammar(xgrammar.NullObj())
-        var error = std.string()
-        var errorKind = xgrammar.bridging.ErrorKind.none
-        let ok = xgrammar.bridging.GrammarFromStructuralTag(
-            std.string(json),
-            &result,
-            &error,
-            &errorKind
-        )
-        if !ok {
-            throw makeXGrammarError(kind: errorKind, message: String(error))
+        var errorKind = XGRAMMAR_ERROR_NONE
+        var errorMessage: UnsafeMutablePointer<CChar>?
+        guard
+            let ptr = xgrammar_grammar_create_from_structural_tag(
+                json,
+                &errorKind,
+                &errorMessage
+            )
+        else {
+            let message = consumeCString(errorMessage)
+            throw makeXGrammarError(kind: errorKind, message: message)
         }
-        self.raw = result
+        self.handle = Handle(ptr)
     }
 
     /// Creates a grammar from serialized JSON data.
@@ -112,28 +114,24 @@ public struct Grammar: @unchecked Sendable {
         guard let json = String(data: jsonData, encoding: .utf8) else {
             throw XGrammarError.invalidJSON("Invalid UTF-8 data.")
         }
-        var result = CxxGrammar(xgrammar.NullObj())
-        var error = std.string()
-        var errorKind = xgrammar.bridging.ErrorKind.none
-        let ok = xgrammar.bridging.GrammarDeserializeJSON(
-            std.string(json),
-            &result,
-            &error,
-            &errorKind
-        )
-        if !ok {
-            throw makeXGrammarError(kind: errorKind, message: String(error))
+        var errorKind = XGRAMMAR_ERROR_NONE
+        var errorMessage: UnsafeMutablePointer<CChar>?
+        guard
+            let ptr = xgrammar_grammar_create_from_serialized_json(
+                json,
+                &errorKind,
+                &errorMessage
+            )
+        else {
+            let message = consumeCString(errorMessage)
+            throw makeXGrammarError(kind: errorKind, message: message)
         }
-        self.raw = result
-    }
-
-    init(raw: CxxGrammar) {
-        self.raw = raw
+        self.handle = Handle(ptr)
     }
 
     /// Serializes the grammar to JSON data.
     public var jsonData: Data {
-        return Data(String(raw.SerializeJSON()).utf8)
+        Data(consumeCString(xgrammar_grammar_serialize_json(handle.pointer)).utf8)
     }
 
     /// Compiles this grammar for a specific tokenizer.
@@ -161,6 +159,6 @@ public struct Grammar: @unchecked Sendable {
 extension Grammar: CustomStringConvertible {
     /// The EBNF representation of the grammar.
     public var description: String {
-        String(raw.ToString())
+        consumeCString(xgrammar_grammar_to_string(handle.pointer))
     }
 }

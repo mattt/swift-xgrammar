@@ -1,6 +1,4 @@
 module Cxgrammar {
-    header "xgrammar/xgrammar.h"
     header "bridging.h"
-    requires cplusplus
     export *
 }

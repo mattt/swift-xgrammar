@@ -1,11 +1,8 @@
 import Cxgrammar
-import CxxStdlib
 
 #if canImport(CoreML)
     import CoreML
 #endif
-
-typealias CxxGrammarMatcher = xgrammar.GrammarMatcher
 
 extension Grammar {
     /// A stateful matcher that tracks generation progress and provides token masks.
@@ -14,7 +11,14 @@ extension Grammar {
     /// backtracking. It can compute the set of acceptable next tokens and store them
     /// into a bitmask for constrained decoding.
     public struct Matcher: @unchecked Sendable {
-        var raw: CxxGrammarMatcher
+        let handle: Handle
+
+        /// ARC-managed wrapper around the opaque C handle.
+        final class Handle: @unchecked Sendable {
+            let pointer: OpaquePointer
+            init(_ pointer: OpaquePointer) { self.pointer = pointer }
+            deinit { xgrammar_matcher_destroy(pointer) }
+        }
 
         /// A compressed bitmask for constraining next-token selection.
         ///
@@ -52,7 +56,7 @@ extension Grammar {
 
             /// Computes the number of 32-bit words needed for a vocabulary size.
             public static func wordsPerBatch(vocabSize: Int) -> Int {
-                Int(xgrammar.GetBitmaskSize(Int32(vocabSize)))
+                Int(xgrammar_get_bitmask_size(Int32(vocabSize)))
             }
 
             /// Applies the bitmask to logits in-place.
@@ -91,17 +95,17 @@ extension Grammar {
 
         /// Whether the matcher has terminated after accepting a stop token.
         public var isTerminated: Bool {
-            raw.IsTerminated()
+            xgrammar_matcher_is_terminated(handle.pointer)
         }
 
         /// Stop token IDs used by the matcher.
         public var stopTokenIDs: [Int32] {
+            let count = Int(xgrammar_matcher_stop_token_ids_count(handle.pointer))
             var result: [Int32] = []
-            let count = Int(xgrammar.bridging.GrammarMatcherStopTokenIdsCount(raw))
             result.reserveCapacity(count)
             for index in 0 ..< count {
                 result.append(
-                    xgrammar.bridging.GrammarMatcherStopTokenIdAt(raw, Int32(index))
+                    xgrammar_matcher_stop_token_id_at(handle.pointer, Int32(index))
                 )
             }
             return result
@@ -119,9 +123,9 @@ extension Grammar {
             terminatesWithoutStopToken: Bool = false
         ) {
             let resolvedStopTokens = stopTokens ?? []
-            self.raw = resolvedStopTokens.withUnsafeBufferPointer { buffer in
-                xgrammar.bridging.CreateGrammarMatcher(
-                    compiledGrammar.raw,
+            let ptr = resolvedStopTokens.withUnsafeBufferPointer { buffer in
+                xgrammar_matcher_create(
+                    compiledGrammar.handle.pointer,
                     buffer.baseAddress,
                     Int32(buffer.count),
                     stopTokens != nil,
@@ -129,6 +133,7 @@ extension Grammar {
                     -1
                 )
             }
+            self.handle = Handle(ptr!)
         }
 
         /// Accepts a token and advances the matcher state.
@@ -138,13 +143,13 @@ extension Grammar {
         /// - Returns: `true` if the token is accepted by the grammar.
         @discardableResult
         public mutating func accept(_ tokenID: Int32) -> Bool {
-            raw.AcceptToken(tokenID, false)
+            xgrammar_matcher_accept_token(handle.pointer, tokenID)
         }
 
         /// Accepts a string as a single rollback step.
         @discardableResult
         public mutating func accept(_ string: String) -> Bool {
-            raw.AcceptString(std.string(string), false)
+            xgrammar_matcher_accept_string(handle.pointer, string)
         }
 
         /// Fills a token bitmask for the next decoding step.
@@ -162,29 +167,28 @@ extension Grammar {
                 guard let base = buffer.baseAddress?.advanced(by: offset) else {
                     return false
                 }
-                return xgrammar.bridging.FillNextTokenBitmask(
-                    &raw,
+                return xgrammar_matcher_fill_next_token_bitmask(
+                    handle.pointer,
                     base,
                     Int32(rowCount),
-                    Int32(index),
-                    false
+                    Int32(index)
                 )
             }
         }
 
         /// Returns the deterministic jump-forward string from the current state.
         public mutating func jumpForwardString() -> String {
-            String(raw.FindJumpForwardString())
+            consumeCString(xgrammar_matcher_find_jump_forward_string(handle.pointer))
         }
 
         /// Rolls back the matcher by a number of accepted tokens.
         public mutating func rollback(count: Int = 1) {
-            raw.Rollback(Int32(count))
+            xgrammar_matcher_rollback(handle.pointer, Int32(count))
         }
 
         /// Resets the matcher to the initial state.
         public mutating func reset() {
-            raw.Reset()
+            xgrammar_matcher_reset(handle.pointer)
         }
     }
 }
@@ -193,7 +197,7 @@ extension Grammar {
 
 extension Grammar.Matcher: CustomDebugStringConvertible {
     public var debugDescription: String {
-        String(raw._DebugPrintInternalState())
+        consumeCString(xgrammar_matcher_debug_print(handle.pointer))
     }
 }
 
