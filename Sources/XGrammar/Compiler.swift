@@ -62,7 +62,7 @@ extension Grammar {
                 )
             else {
                 let message = consumeCString(errorMessage)
-                throw makeXGrammarError(kind: errorKind, message: message)
+                throw XGrammarError(kind: errorKind, message: message)
             }
             self.handle = Handle(ptr)
         }
@@ -73,11 +73,13 @@ extension Grammar {
         }
 
         /// Creates a matcher from this compiled grammar.
+        ///
+        /// - Throws: `XGrammarError` if matcher creation fails.
         public func matcher(
             stopTokens: [Int32]? = nil,
             terminatesWithoutStopToken: Bool = false
-        ) -> Grammar.Matcher {
-            Grammar.Matcher(
+        ) throws -> Grammar.Matcher {
+            try Grammar.Matcher(
                 self,
                 stopTokens: stopTokens,
                 terminatesWithoutStopToken: terminatesWithoutStopToken

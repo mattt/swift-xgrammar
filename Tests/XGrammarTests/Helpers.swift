@@ -30,6 +30,6 @@ func makeJSONVocab() -> [String] {
     ["{", "}", "\"", ":", ",", "a", "b", " "]
 }
 
-func makeSimpleTokenizer() -> TokenizerInfo {
-    TokenizerInfo(encodedVocab: ["a", "b", "c"])
+func makeSimpleTokenizer() throws -> TokenizerInfo {
+    try TokenizerInfo(encodedVocab: ["a", "b", "c"])
 }

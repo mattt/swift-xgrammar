@@ -88,13 +88,13 @@ Combine grammars with union or concatenation:
 
 ```swift
 // Match any of the provided grammars
-let either = Grammar.anyOf([
+let either = try Grammar.anyOf([
     Grammar(regex: "[0-9]+"),
     Grammar(regex: "[a-z]+")
 ])
 
 // Match a sequence of grammars
-let sequence = Grammar.sequence([
+let sequence = try Grammar.sequence([
     Grammar(ebnf: #"root ::= "hello ""#),
     Grammar(ebnf: #"root ::= "world""#)
 ])
@@ -106,7 +106,7 @@ Set up a tokenizer, compile a grammar, and use a matcher to constrain token sele
 
 ```swift
 // Create tokenizer info from your model's vocabulary
-let tokenizerInfo = TokenizerInfo(
+let tokenizerInfo = try TokenizerInfo(
     encodedVocab: vocab,
     encoding: .byteLevel
 )
@@ -115,7 +115,7 @@ let tokenizerInfo = TokenizerInfo(
 let compiled = await grammar.compiled(for: tokenizerInfo)
 
 // Create a matcher for constrained decoding
-let matcher = compiled.matcher()
+let matcher = try compiled.matcher()
 
 // Allocate a token bitmask
 var bitmask = Grammar.Matcher.TokenBitmask(

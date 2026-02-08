@@ -8,12 +8,12 @@ struct RegexGrammarTests {
         _ pattern: String,
         accepts: [String],
         rejects: [String]
-    ) async {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c", "0", "1", "2", "-", "m"])
+    ) async throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b", "c", "0", "1", "2", "-", "m"])
         let grammar = Grammar(regex: pattern)
 
         for value in accepts {
-            let matcher = Grammar.Matcher(
+            let matcher = try Grammar.Matcher(
                 await grammar.compiled(for: tokenizer),
                 terminatesWithoutStopToken: true
             )
@@ -23,7 +23,7 @@ struct RegexGrammarTests {
         }
 
         for value in rejects {
-            let matcher = Grammar.Matcher(
+            let matcher = try Grammar.Matcher(
                 await grammar.compiled(for: tokenizer),
                 terminatesWithoutStopToken: true
             )
@@ -32,27 +32,27 @@ struct RegexGrammarTests {
         }
     }
 
-    @Test func literalRegex() async {
-        await assertRegex("abc", accepts: ["abc"], rejects: ["ab", "abcd"])
+    @Test func literalRegex() async throws {
+        try await assertRegex("abc", accepts: ["abc"], rejects: ["ab", "abcd"])
     }
 
-    @Test func characterClasses() async {
-        await assertRegex("[a-z]", accepts: ["m"], rejects: ["1"])
-        await assertRegex("[^0-9]", accepts: ["a"], rejects: ["2"])
+    @Test func characterClasses() async throws {
+        try await assertRegex("[a-z]", accepts: ["m"], rejects: ["1"])
+        try await assertRegex("[^0-9]", accepts: ["a"], rejects: ["2"])
     }
 
-    @Test func quantifiers() async {
-        await assertRegex("a?", accepts: ["", "a"], rejects: ["aa"])
-        await assertRegex("a*", accepts: ["", "a", "aa"], rejects: ["b"])
-        await assertRegex("a+", accepts: ["a", "aa"], rejects: [""])
-        await assertRegex("a{2,4}", accepts: ["aa", "aaaa"], rejects: ["a", "aaaaa"])
+    @Test func quantifiers() async throws {
+        try await assertRegex("a?", accepts: ["", "a"], rejects: ["aa"])
+        try await assertRegex("a*", accepts: ["", "a", "aa"], rejects: ["b"])
+        try await assertRegex("a+", accepts: ["a", "aa"], rejects: [""])
+        try await assertRegex("a{2,4}", accepts: ["aa", "aaaa"], rejects: ["a", "aaaaa"])
     }
 
-    @Test func alternation() async {
-        await assertRegex("a|b", accepts: ["a", "b"], rejects: ["c"])
+    @Test func alternation() async throws {
+        try await assertRegex("a|b", accepts: ["a", "b"], rejects: ["c"])
     }
 
-    @Test func complexPattern() async {
-        await assertRegex("\\d{4}-\\d{2}-\\d{2}", accepts: ["2024-01-02"], rejects: ["2024-1-02"])
+    @Test func complexPattern() async throws {
+        try await assertRegex("\\d{4}-\\d{2}-\\d{2}", accepts: ["2024-01-02"], rejects: ["2024-1-02"])
     }
 }

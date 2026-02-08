@@ -4,8 +4,8 @@ import Testing
 
 @Suite("TokenizerInfo Tests")
 struct TokenizerInfoTests {
-    @Test func basicCreationAndDecodedVocab() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c"])
+    @Test func basicCreationAndDecodedVocab() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b", "c"])
         #expect(tokenizer.vocabulary.size == 3)
         #expect(tokenizer.vocabulary.decoded == ["a", "b", "c"])
 
@@ -13,55 +13,55 @@ struct TokenizerInfoTests {
         #expect(sequence == ["a", "b", "c"])
     }
 
-    @Test func encodingVariants() {
-        let raw = TokenizerInfo(encodedVocab: ["a"], encoding: .raw)
-        let fallback = TokenizerInfo(encodedVocab: ["<0x41>"], encoding: .byteFallback)
-        let byteLevel = TokenizerInfo(encodedVocab: ["a"], encoding: .byteLevel)
+    @Test func encodingVariants() throws {
+        let raw = try TokenizerInfo(encodedVocab: ["a"], encoding: .raw)
+        let fallback = try TokenizerInfo(encodedVocab: ["<0x41>"], encoding: .byteFallback)
+        let byteLevel = try TokenizerInfo(encodedVocab: ["a"], encoding: .byteLevel)
 
         #expect(raw.vocabulary.encoding == .raw)
         #expect(fallback.vocabulary.encoding == .byteFallback)
         #expect(byteLevel.vocabulary.encoding == .byteLevel)
     }
 
-    @Test func paddedVocabularySizeAddsSpecialTokens() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a"], vocabularySize: 3)
+    @Test func paddedVocabularySizeAddsSpecialTokens() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a"], vocabularySize: 3)
         #expect(tokenizer.vocabulary.size == 3)
         #expect(tokenizer.specialTokenIDs.contains(1))
         #expect(tokenizer.specialTokenIDs.contains(2))
     }
 
-    @Test func explicitStopTokenIDs() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c"], stopTokenIDs: [2])
+    @Test func explicitStopTokenIDs() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b", "c"], stopTokenIDs: [2])
         #expect(tokenizer.stopTokenIDs == [2])
     }
 
-    @Test func addPrefixSpaceFlag() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a"], addPrefixSpace: true)
+    @Test func addPrefixSpaceFlag() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a"], addPrefixSpace: true)
         #expect(tokenizer.addPrefixSpace)
     }
 
-    @Test func specialTokenIDsDetectEmptyToken() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["", "a"])
+    @Test func specialTokenIDsDetectEmptyToken() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["", "a"])
         #expect(tokenizer.specialTokenIDs.contains(0))
     }
 
-    @Test func metadataDescriptionIsNonEmpty() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b"])
+    @Test func metadataDescriptionIsNonEmpty() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b"])
         #expect(!tokenizer.description.isEmpty)
     }
 
     @Test func serializationRoundTrip() throws {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c"])
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b", "c"])
         let serialized = tokenizer.jsonData
         let restored = try TokenizerInfo(jsonData: serialized)
         #expect(restored.vocabulary.size == tokenizer.vocabulary.size)
         #expect(restored.vocabulary.decoded == tokenizer.vocabulary.decoded)
     }
 
-    @Test func initFromVocabAndMetadata() {
-        let tokenizer = TokenizerInfo(encodedVocab: ["a", "b"])
+    @Test func initFromVocabAndMetadata() throws {
+        let tokenizer = try TokenizerInfo(encodedVocab: ["a", "b"])
         let metadata = tokenizer.description
-        let rebuilt = TokenizerInfo(encodedVocab: ["a", "b"], metadata: metadata)
+        let rebuilt = try TokenizerInfo(encodedVocab: ["a", "b"], metadata: metadata)
         #expect(rebuilt.vocabulary.size == 2)
     }
 

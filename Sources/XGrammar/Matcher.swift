@@ -112,11 +112,12 @@ extension Grammar {
         ///   - compiledGrammar: The compiled grammar that includes tokenizer preprocessing.
         ///   - stopTokens: Optional stop tokens that override detection.
         ///   - terminatesWithoutStopToken: Whether the matcher can terminate without a stop token.
+        /// - Throws: `XGrammarError` if matcher creation fails.
         public init(
             _ compiledGrammar: Grammar.Compiled,
             stopTokens: [Int32]? = nil,
             terminatesWithoutStopToken: Bool = false
-        ) {
+        ) throws {
             let resolvedStopTokens = stopTokens ?? []
             let ptr = resolvedStopTokens.withUnsafeBufferPointer { buffer in
                 xgrammar_matcher_create(
@@ -128,7 +129,10 @@ extension Grammar {
                     -1
                 )
             }
-            self.handle = ptr!
+            guard let ptr else {
+                throw XGrammarError(context: "grammar matcher")
+            }
+            self.handle = ptr
         }
 
         /// Accepts a token and advances the matcher state.

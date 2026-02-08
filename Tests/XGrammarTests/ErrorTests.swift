@@ -8,12 +8,12 @@ struct ErrorTests {
     @Test func errorDescriptionsMatchMessages() {
         let message = "message"
         let cases: [XGrammarError] = [
-            makeXGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_VERSION, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_FORMAT, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_STRUCTURAL_TAG, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON_SCHEMA, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_UNKNOWN, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_VERSION, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_FORMAT, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_INVALID_STRUCTURAL_TAG, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON_SCHEMA, message: message),
+            XGrammarError(kind: XGRAMMAR_ERROR_UNKNOWN, message: message),
         ]
 
         for error in cases {

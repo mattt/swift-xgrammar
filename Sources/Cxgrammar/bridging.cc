@@ -120,12 +120,14 @@ xgrammar_grammar* xgrammar_grammar_create_builtin_json(void) {
 }
 
 xgrammar_grammar* xgrammar_grammar_create_from_ebnf(const char* ebnf, const char* root_rule) {
+  if (!ebnf) return nullptr;
   return new xgrammar_grammar{
       xgrammar::Grammar::FromEBNF(std::string(ebnf), std::string(root_rule ? root_rule : "root"))
   };
 }
 
 xgrammar_grammar* xgrammar_grammar_create_from_regex(const char* regex) {
+  if (!regex) return nullptr;
   return new xgrammar_grammar{xgrammar::Grammar::FromRegex(std::string(regex), false)};
 }
 
@@ -142,6 +144,8 @@ xgrammar_grammar* xgrammar_grammar_create_from_json_schema(
     int32_t max_whitespace,
     bool print_converted_ebnf
 ) {
+  if (!schema) return nullptr;
+  if (has_separators && (!sep_item || !sep_line)) return nullptr;
   std::optional<int> indent_opt = has_indent ? std::optional<int>(indent) : std::nullopt;
   std::optional<std::pair<std::string, std::string>> separators_opt;
   if (has_separators) {
@@ -164,6 +168,11 @@ xgrammar_grammar* xgrammar_grammar_create_from_json_schema(
 xgrammar_grammar* xgrammar_grammar_create_from_structural_tag(
     const char* json, xgrammar_error_kind* out_error_kind, char** out_error
 ) {
+  if (!json) {
+    if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_INVALID_JSON;
+    if (out_error) *out_error = copy_string("JSON string is null.");
+    return nullptr;
+  }
   auto result = xgrammar::Grammar::FromStructuralTag(std::string(json));
   if (std::holds_alternative<xgrammar::Grammar>(result)) {
     if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_NONE;
@@ -179,6 +188,11 @@ xgrammar_grammar* xgrammar_grammar_create_from_structural_tag(
 xgrammar_grammar* xgrammar_grammar_create_from_serialized_json(
     const char* json, xgrammar_error_kind* out_error_kind, char** out_error
 ) {
+  if (!json) {
+    if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_INVALID_JSON;
+    if (out_error) *out_error = copy_string("JSON string is null.");
+    return nullptr;
+  }
   auto result = xgrammar::Grammar::DeserializeJSON(std::string(json));
   if (std::holds_alternative<xgrammar::Grammar>(result)) {
     if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_NONE;
@@ -194,6 +208,7 @@ xgrammar_grammar* xgrammar_grammar_create_from_serialized_json(
 xgrammar_grammar* xgrammar_grammar_create_union(
     const xgrammar_grammar* const* grammars, int32_t count
 ) {
+  if (!grammars && count > 0) return nullptr;
   std::vector<xgrammar::Grammar> vec;
   if (grammars && count > 0) {
     vec.reserve(static_cast<size_t>(count));
@@ -207,6 +222,7 @@ xgrammar_grammar* xgrammar_grammar_create_union(
 xgrammar_grammar* xgrammar_grammar_create_concat(
     const xgrammar_grammar* const* grammars, int32_t count
 ) {
+  if (!grammars && count > 0) return nullptr;
   std::vector<xgrammar::Grammar> vec;
   if (grammars && count > 0) {
     vec.reserve(static_cast<size_t>(count));
@@ -220,10 +236,12 @@ xgrammar_grammar* xgrammar_grammar_create_concat(
 void xgrammar_grammar_destroy(xgrammar_grammar* grammar) { delete grammar; }
 
 char* xgrammar_grammar_to_string(const xgrammar_grammar* grammar) {
+  if (!grammar) return nullptr;
   return copy_string(grammar->obj.ToString());
 }
 
 char* xgrammar_grammar_serialize_json(const xgrammar_grammar* grammar) {
+  if (!grammar) return nullptr;
   return copy_string(grammar->obj.SerializeJSON());
 }
 
@@ -237,6 +255,11 @@ xgrammar_compiled_grammar* xgrammar_compiled_grammar_create_from_serialized_json
     xgrammar_error_kind* out_error_kind,
     char** out_error
 ) {
+  if (!json || !tokenizer_info) {
+    if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_INVALID_JSON;
+    if (out_error) *out_error = copy_string("JSON string or tokenizer info is null.");
+    return nullptr;
+  }
   auto result = xgrammar::CompiledGrammar::DeserializeJSON(std::string(json), tokenizer_info->obj);
   if (std::holds_alternative<xgrammar::CompiledGrammar>(result)) {
     if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_NONE;
@@ -252,20 +275,24 @@ xgrammar_compiled_grammar* xgrammar_compiled_grammar_create_from_serialized_json
 void xgrammar_compiled_grammar_destroy(xgrammar_compiled_grammar* cg) { delete cg; }
 
 xgrammar_grammar* xgrammar_compiled_grammar_get_grammar(const xgrammar_compiled_grammar* cg) {
+  if (!cg) return nullptr;
   return new xgrammar_grammar{cg->obj.GetGrammar()};
 }
 
 xgrammar_tokenizer_info* xgrammar_compiled_grammar_get_tokenizer_info(
     const xgrammar_compiled_grammar* cg
 ) {
+  if (!cg) return nullptr;
   return new xgrammar_tokenizer_info{cg->obj.GetTokenizerInfo()};
 }
 
 size_t xgrammar_compiled_grammar_memory_size(const xgrammar_compiled_grammar* cg) {
+  if (!cg) return 0;
   return cg->obj.MemorySizeBytes();
 }
 
 char* xgrammar_compiled_grammar_serialize_json(const xgrammar_compiled_grammar* cg) {
+  if (!cg) return nullptr;
   return copy_string(cg->obj.SerializeJSON());
 }
 
@@ -279,6 +306,7 @@ xgrammar_grammar_compiler* xgrammar_compiler_create(
     bool cache_enabled,
     int64_t max_memory_bytes
 ) {
+  if (!tokenizer_info) return nullptr;
   return new xgrammar_grammar_compiler{
       xgrammar::GrammarCompiler(tokenizer_info->obj, max_threads, cache_enabled, max_memory_bytes)
   };
@@ -289,6 +317,7 @@ void xgrammar_compiler_destroy(xgrammar_grammar_compiler* compiler) { delete com
 xgrammar_compiled_grammar* xgrammar_compiler_compile_grammar(
     xgrammar_grammar_compiler* compiler, const xgrammar_grammar* grammar
 ) {
+  if (!compiler || !grammar) return nullptr;
   return new xgrammar_compiled_grammar{compiler->obj.CompileGrammar(grammar->obj)};
 }
 
@@ -305,6 +334,8 @@ xgrammar_compiled_grammar* xgrammar_compiler_compile_json_schema(
     bool has_max_whitespace,
     int32_t max_whitespace
 ) {
+  if (!compiler || !schema) return nullptr;
+  if (has_separators && (!sep_item || !sep_line)) return nullptr;
   std::optional<int> indent_opt = has_indent ? std::optional<int>(indent) : std::nullopt;
   std::optional<std::pair<std::string, std::string>> separators_opt;
   if (has_separators) {
@@ -321,18 +352,22 @@ xgrammar_compiled_grammar* xgrammar_compiler_compile_json_schema(
 xgrammar_compiled_grammar* xgrammar_compiler_compile_builtin_json(
     xgrammar_grammar_compiler* compiler
 ) {
+  if (!compiler) return nullptr;
   return new xgrammar_compiled_grammar{compiler->obj.CompileBuiltinJSONGrammar()};
 }
 
 int64_t xgrammar_compiler_cache_size(const xgrammar_grammar_compiler* compiler) {
+  if (!compiler) return 0;
   return compiler->obj.GetCacheSizeBytes();
 }
 
 int64_t xgrammar_compiler_cache_limit(const xgrammar_grammar_compiler* compiler) {
+  if (!compiler) return 0;
   return compiler->obj.CacheLimitBytes();
 }
 
 void xgrammar_compiler_clear_cache(xgrammar_grammar_compiler* compiler) {
+  if (!compiler) return;
   compiler->obj.ClearCache();
 }
 
@@ -348,6 +383,7 @@ xgrammar_grammar_matcher* xgrammar_matcher_create(
     bool terminate_without_stop_token,
     int32_t max_rollback_tokens
 ) {
+  if (!compiled_grammar) return nullptr;
   std::optional<std::vector<int32_t>> override_opt;
   if (has_override_stop_tokens) {
     if (override_stop_tokens && override_stop_token_count > 0) {
@@ -364,10 +400,12 @@ xgrammar_grammar_matcher* xgrammar_matcher_create(
 void xgrammar_matcher_destroy(xgrammar_grammar_matcher* matcher) { delete matcher; }
 
 bool xgrammar_matcher_accept_token(xgrammar_grammar_matcher* matcher, int32_t token_id) {
+  if (!matcher) return false;
   return matcher->obj.AcceptToken(token_id, false);
 }
 
 bool xgrammar_matcher_accept_string(xgrammar_grammar_matcher* matcher, const char* str) {
+  if (!matcher || !str) return false;
   return matcher->obj.AcceptString(std::string(str), false);
 }
 
@@ -390,30 +428,39 @@ bool xgrammar_matcher_fill_next_token_bitmask(
 }
 
 char* xgrammar_matcher_find_jump_forward_string(xgrammar_grammar_matcher* matcher) {
+  if (!matcher) return nullptr;
   return copy_string(matcher->obj.FindJumpForwardString());
 }
 
 void xgrammar_matcher_rollback(xgrammar_grammar_matcher* matcher, int32_t num_tokens) {
+  if (!matcher) return;
   matcher->obj.Rollback(num_tokens);
 }
 
-void xgrammar_matcher_reset(xgrammar_grammar_matcher* matcher) { matcher->obj.Reset(); }
+void xgrammar_matcher_reset(xgrammar_grammar_matcher* matcher) {
+  if (!matcher) return;
+  matcher->obj.Reset();
+}
 
 bool xgrammar_matcher_is_terminated(const xgrammar_grammar_matcher* matcher) {
+  if (!matcher) return false;
   return matcher->obj.IsTerminated();
 }
 
 int32_t xgrammar_matcher_stop_token_ids_count(const xgrammar_grammar_matcher* matcher) {
+  if (!matcher) return 0;
   return static_cast<int32_t>(matcher->obj.GetStopTokenIds().size());
 }
 
 int32_t xgrammar_matcher_stop_token_id_at(const xgrammar_grammar_matcher* matcher, int32_t index) {
+  if (!matcher) return 0;
   const auto& ids = matcher->obj.GetStopTokenIds();
   if (index < 0 || index >= static_cast<int32_t>(ids.size())) return 0;
   return ids[static_cast<size_t>(index)];
 }
 
 char* xgrammar_matcher_debug_print(const xgrammar_grammar_matcher* matcher) {
+  if (!matcher) return nullptr;
   return copy_string(matcher->obj._DebugPrintInternalState());
 }
 
@@ -432,6 +479,8 @@ xgrammar_tokenizer_info* xgrammar_tokenizer_info_create(
     bool has_stop_token_ids,
     bool add_prefix_space
 ) {
+  if (!encoded_vocab && encoded_vocab_count > 0) return nullptr;
+  if (has_stop_token_ids && !stop_token_ids && stop_token_count > 0) return nullptr;
   auto vec = to_string_vector(encoded_vocab, encoded_vocab_count);
 
   std::optional<int> vocab_size_opt =
@@ -454,6 +503,8 @@ xgrammar_tokenizer_info* xgrammar_tokenizer_info_create(
 xgrammar_tokenizer_info* xgrammar_tokenizer_info_create_from_vocab_and_metadata(
     const char* const* encoded_vocab, int32_t encoded_vocab_count, const char* metadata
 ) {
+  if (!metadata) return nullptr;
+  if (!encoded_vocab && encoded_vocab_count > 0) return nullptr;
   auto vec = to_string_vector(encoded_vocab, encoded_vocab_count);
   return new xgrammar_tokenizer_info{
       xgrammar::TokenizerInfo::FromVocabAndMetadata(vec, std::string(metadata))
@@ -463,6 +514,11 @@ xgrammar_tokenizer_info* xgrammar_tokenizer_info_create_from_vocab_and_metadata(
 xgrammar_tokenizer_info* xgrammar_tokenizer_info_create_from_serialized_json(
     const char* json, xgrammar_error_kind* out_error_kind, char** out_error
 ) {
+  if (!json) {
+    if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_INVALID_JSON;
+    if (out_error) *out_error = copy_string("JSON string is null.");
+    return nullptr;
+  }
   auto result = xgrammar::TokenizerInfo::DeserializeJSON(std::string(json));
   if (std::holds_alternative<xgrammar::TokenizerInfo>(result)) {
     if (out_error_kind) *out_error_kind = XGRAMMAR_ERROR_NONE;
@@ -478,6 +534,7 @@ xgrammar_tokenizer_info* xgrammar_tokenizer_info_create_from_serialized_json(
 void xgrammar_tokenizer_info_destroy(xgrammar_tokenizer_info* info) { delete info; }
 
 xgrammar_vocab_type xgrammar_tokenizer_info_vocab_type(const xgrammar_tokenizer_info* info) {
+  if (!info) return XGRAMMAR_VOCAB_RAW;
   switch (info->obj.GetVocabType()) {
     case xgrammar::VocabType::BYTE_FALLBACK:
       return XGRAMMAR_VOCAB_BYTE_FALLBACK;
@@ -489,54 +546,65 @@ xgrammar_vocab_type xgrammar_tokenizer_info_vocab_type(const xgrammar_tokenizer_
 }
 
 bool xgrammar_tokenizer_info_add_prefix_space(const xgrammar_tokenizer_info* info) {
+  if (!info) return false;
   return info->obj.GetAddPrefixSpace();
 }
 
 int32_t xgrammar_tokenizer_info_vocab_size(const xgrammar_tokenizer_info* info) {
+  if (!info) return 0;
   return static_cast<int32_t>(info->obj.GetVocabSize());
 }
 
 char* xgrammar_tokenizer_info_dump_metadata(const xgrammar_tokenizer_info* info) {
+  if (!info) return nullptr;
   return copy_string(info->obj.DumpMetadata());
 }
 
 char* xgrammar_tokenizer_info_serialize_json(const xgrammar_tokenizer_info* info) {
+  if (!info) return nullptr;
   return copy_string(info->obj.SerializeJSON());
 }
 
 char* xgrammar_tokenizer_info_detect_metadata_from_hf(const char* backend_str) {
+  if (!backend_str) return nullptr;
   return copy_string(xgrammar::TokenizerInfo::DetectMetadataFromHF(std::string(backend_str)));
 }
 
 int32_t xgrammar_tokenizer_info_decoded_vocab_count(const xgrammar_tokenizer_info* info) {
+  if (!info) return 0;
   return static_cast<int32_t>(info->obj.GetDecodedVocab().size());
 }
 
 char* xgrammar_tokenizer_info_decoded_vocab_at(const xgrammar_tokenizer_info* info, int32_t index) {
+  if (!info) return nullptr;
   const auto& vocab = info->obj.GetDecodedVocab();
   if (index < 0 || index >= static_cast<int32_t>(vocab.size())) return copy_string("");
   return copy_string(vocab[static_cast<size_t>(index)]);
 }
 
 int32_t xgrammar_tokenizer_info_stop_token_ids_count(const xgrammar_tokenizer_info* info) {
+  if (!info) return 0;
   return static_cast<int32_t>(info->obj.GetStopTokenIds().size());
 }
 
 int32_t xgrammar_tokenizer_info_stop_token_id_at(
     const xgrammar_tokenizer_info* info, int32_t index
 ) {
+  if (!info) return 0;
   const auto& ids = info->obj.GetStopTokenIds();
   if (index < 0 || index >= static_cast<int32_t>(ids.size())) return 0;
   return ids[static_cast<size_t>(index)];
 }
 
 int32_t xgrammar_tokenizer_info_special_token_ids_count(const xgrammar_tokenizer_info* info) {
+  if (!info) return 0;
   return static_cast<int32_t>(info->obj.GetSpecialTokenIds().size());
 }
 
 int32_t xgrammar_tokenizer_info_special_token_id_at(
     const xgrammar_tokenizer_info* info, int32_t index
 ) {
+  if (!info) return 0;
   const auto& ids = info->obj.GetSpecialTokenIds();
   if (index < 0 || index >= static_cast<int32_t>(ids.size())) return 0;
   return ids[static_cast<size_t>(index)];

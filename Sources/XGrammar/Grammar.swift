@@ -28,26 +28,36 @@ public struct Grammar: @unchecked Sendable {
 
     /// Returns a grammar that matches any of the provided grammars.
     ///
-    /// - Precondition: `grammars` must not be empty.
-    public static func anyOf(_ grammars: [Grammar]) -> Grammar {
-        precondition(!grammars.isEmpty, "Grammar.anyOf requires at least one grammar.")
+    /// - Throws: `XGrammarError` if `grammars` is empty or creation fails.
+    public static func anyOf(_ grammars: [Grammar]) throws -> Grammar {
+        guard !grammars.isEmpty else {
+            throw XGrammarError.runtimeError("Grammar.anyOf requires at least one grammar.")
+        }
         var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
         let result = handles.withUnsafeMutableBufferPointer { buf in
             xgrammar_grammar_create_union(buf.baseAddress, Int32(buf.count))
         }
-        return Grammar(handle: Handle(result!))
+        guard let result else {
+            throw XGrammarError(context: "union grammar")
+        }
+        return Grammar(handle: Handle(result))
     }
 
     /// Returns a grammar that matches the concatenation of the provided grammars.
     ///
-    /// - Precondition: `grammars` must not be empty.
-    public static func sequence(_ grammars: [Grammar]) -> Grammar {
-        precondition(!grammars.isEmpty, "Grammar.sequence requires at least one grammar.")
+    /// - Throws: `XGrammarError` if `grammars` is empty or creation fails.
+    public static func sequence(_ grammars: [Grammar]) throws -> Grammar {
+        guard !grammars.isEmpty else {
+            throw XGrammarError.runtimeError("Grammar.sequence requires at least one grammar.")
+        }
         var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
         let result = handles.withUnsafeMutableBufferPointer { buf in
             xgrammar_grammar_create_concat(buf.baseAddress, Int32(buf.count))
         }
-        return Grammar(handle: Handle(result!))
+        guard let result else {
+            throw XGrammarError(context: "concatenated grammar")
+        }
+        return Grammar(handle: Handle(result))
     }
 
     /// Creates a grammar from an EBNF string.
@@ -110,7 +120,7 @@ public struct Grammar: @unchecked Sendable {
             )
         else {
             let message = consumeCString(errorMessage)
-            throw makeXGrammarError(kind: errorKind, message: message)
+            throw XGrammarError(kind: errorKind, message: message)
         }
         self.handle = Handle(ptr)
     }
@@ -130,7 +140,7 @@ public struct Grammar: @unchecked Sendable {
             )
         else {
             let message = consumeCString(errorMessage)
-            throw makeXGrammarError(kind: errorKind, message: message)
+            throw XGrammarError(kind: errorKind, message: message)
         }
         self.handle = Handle(ptr)
     }
@@ -147,12 +157,14 @@ public struct Grammar: @unchecked Sendable {
     }
 
     /// Creates a matcher for this grammar with a specific tokenizer.
+    ///
+    /// - Throws: `XGrammarError` if matcher creation fails.
     public func matcher(
         for tokenizerInfo: TokenizerInfo,
         stopTokens: [Int32]? = nil,
         terminatesWithoutStopToken: Bool = false
-    ) async -> Grammar.Matcher {
-        await compiled(for: tokenizerInfo)
+    ) async throws -> Grammar.Matcher {
+        try await compiled(for: tokenizerInfo)
             .matcher(
                 stopTokens: stopTokens,
                 terminatesWithoutStopToken: terminatesWithoutStopToken

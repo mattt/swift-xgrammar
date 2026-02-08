@@ -178,15 +178,16 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
     ///   - vocabularySize: The total vocabulary size, if different from `encodedVocab.count`.
     ///   - stopTokenIDs: Optional stop tokens to override detection.
     ///   - addPrefixSpace: Whether tokenization requires a prefix space.
+    /// - Throws: `XGrammarError` if the tokenizer info could not be created.
     public init(
         encodedVocab: [String],
         encoding: Vocabulary.Encoding = .raw,
         vocabularySize: Int? = nil,
         stopTokenIDs: [Int32]? = nil,
         addPrefixSpace: Bool = false
-    ) {
+    ) throws {
         let stopTokens = stopTokenIDs ?? []
-        let ptr = withCStringArray(encodedVocab) { vocabPtr, vocabCount in
+        let ptr = try withCStringArray(encodedVocab) { vocabPtr, vocabCount in
             stopTokens.withUnsafeBufferPointer { stopBuffer in
                 xgrammar_tokenizer_info_create(
                     vocabPtr,
@@ -201,7 +202,10 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
                 )
             }
         }
-        self.handle = Handle(ptr!)
+        guard let ptr else {
+            throw XGrammarError(context: "tokenizer info")
+        }
+        self.handle = Handle(ptr)
     }
 
     /// Creates tokenizer info from serialized JSON data.
@@ -219,21 +223,25 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
             )
         else {
             let message = consumeCString(errorMessage)
-            throw makeXGrammarError(kind: errorKind, message: message)
+            throw XGrammarError(kind: errorKind, message: message)
         }
         self.handle = Handle(ptr)
     }
 
     /// Creates tokenizer info from vocab strings and serialized metadata.
-    public init(encodedVocab: [String], metadata: String) {
-        let ptr = withCStringArray(encodedVocab) { vocabPtr, vocabCount in
+    /// - Throws: `XGrammarError` if the tokenizer info could not be created.
+    public init(encodedVocab: [String], metadata: String) throws {
+        let ptr = try withCStringArray(encodedVocab) { vocabPtr, vocabCount in
             xgrammar_tokenizer_info_create_from_vocab_and_metadata(
                 vocabPtr,
                 vocabCount,
                 metadata
             )
         }
-        self.handle = Handle(ptr!)
+        guard let ptr else {
+            throw XGrammarError(context: "tokenizer info")
+        }
+        self.handle = Handle(ptr)
     }
 
     /// Serializes tokenizer info to JSON data.

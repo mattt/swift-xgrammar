@@ -19,7 +19,10 @@ struct GrammarTests {
     @Test func usesCustomRootRule() async throws {
         let grammar = Grammar(ebnf: #"start ::= "a""#, rootRule: "start")
         #expect(grammar.description.contains("root"))
-        let matcher = await grammar.matcher(for: makeSimpleTokenizer(), terminatesWithoutStopToken: true)
+        let matcher = try await grammar.matcher(
+            for: try makeSimpleTokenizer(),
+            terminatesWithoutStopToken: true
+        )
         let accepted = matcher.accept("a")
         #expect(accepted)
     }
@@ -43,13 +46,13 @@ struct GrammarTests {
 
     @Test func compiledConvenienceBuilds() async throws {
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        let compiled = await grammar.compiled(for: makeSimpleTokenizer())
+        let compiled = await grammar.compiled(for: try makeSimpleTokenizer())
         #expect(compiled.memorySize > 0)
     }
 
     @Test func matcherConvenienceBuilds() async throws {
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        let matcher = await grammar.matcher(for: makeSimpleTokenizer())
+        let matcher = try await grammar.matcher(for: try makeSimpleTokenizer())
         let accepted = matcher.accept("a")
         #expect(accepted)
     }

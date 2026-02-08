@@ -23,9 +23,17 @@ func consumeCString(_ ptr: UnsafeMutablePointer<CChar>?) -> String {
 func withCStringArray<R>(
     _ strings: [String],
     _ body: (UnsafePointer<UnsafePointer<CChar>?>?, Int32) -> R
-) -> R {
-    let cStrings: [UnsafePointer<CChar>?] = strings.map { str in
-        UnsafePointer(strdup(str))
+) throws -> R {
+    var cStrings: [UnsafePointer<CChar>?] = []
+    cStrings.reserveCapacity(strings.count)
+    for string in strings {
+        guard let duplicated = strdup(string) else {
+            for ptr in cStrings {
+                if let p = ptr { free(UnsafeMutablePointer(mutating: p)) }
+            }
+            throw XGrammarError.runtimeError("Failed to allocate C string.")
+        }
+        cStrings.append(UnsafePointer(duplicated))
     }
     defer {
         for ptr in cStrings {
