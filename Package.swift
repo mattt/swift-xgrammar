@@ -24,7 +24,6 @@ let package = Package(
                 .define("XGRAMMAR_ENABLE_INTERNAL_CHECK", to: "0"),
                 .headerSearchPath("include"),
                 .headerSearchPath("cpp"),
-                .unsafeFlags(["-std=c++17"]),
             ]
         ),
         .target(
@@ -38,5 +37,6 @@ let package = Package(
                 .interoperabilityMode(.Cxx)
             ]
         ),
-    ]
+    ],
+    cxxLanguageStandard: .cxx17
 )
