@@ -32,19 +32,19 @@ public enum XGrammarError: Error, CustomStringConvertible, LocalizedError, Senda
 
 @inline(__always)
 func makeXGrammarError(
-    kind: xgrammar.bridging.ErrorKind,
+    kind: xgrammar_error_kind,
     message: String
 ) -> XGrammarError {
     switch kind {
-    case .deserializeVersion:
+    case XGRAMMAR_ERROR_DESERIALIZE_VERSION:
         return .deserializeVersion(message)
-    case .deserializeFormat:
+    case XGRAMMAR_ERROR_DESERIALIZE_FORMAT:
         return .deserializeFormat(message)
-    case .invalidJSON:
+    case XGRAMMAR_ERROR_INVALID_JSON:
         return .invalidJSON(message)
-    case .invalidStructuralTag:
+    case XGRAMMAR_ERROR_INVALID_STRUCTURAL_TAG:
         return .invalidStructuralTag(message)
-    case .invalidJSONSchema:
+    case XGRAMMAR_ERROR_INVALID_JSON_SCHEMA:
         return .invalidJSONSchema(message)
     default:
         return .nativeError(message)
