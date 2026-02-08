@@ -2,10 +2,12 @@ import Cxgrammar
 import Foundation
 
 extension Grammar {
-    /// A compiled grammar tied to a specific tokenizer.
+    /// A grammar compiled for a specific tokenizer.
     ///
-    /// This type contains preprocessing results for both the grammar and tokenizer and is the
-    /// input to `Grammar.Matcher`. It is safe to serialize and cache.
+    /// A compiled grammar contains preprocessing results
+    /// for both the grammar and tokenizer,
+    /// and serves as the input to ``Grammar/Matcher``.
+    /// Compiled grammars are safe to serialize and cache.
     public struct Compiled: @unchecked Sendable {
         let handle: Handle
 
@@ -20,7 +22,7 @@ extension Grammar {
             self.handle = handle
         }
 
-        /// The original grammar.
+        /// The grammar that was compiled.
         public var grammar: Grammar {
             Grammar(
                 handle: Grammar.Handle(
@@ -29,7 +31,7 @@ extension Grammar {
             )
         }
 
-        /// The tokenizer info used for compilation.
+        /// The tokenizer information used during compilation.
         public var tokenizerInfo: TokenizerInfo {
             TokenizerInfo(
                 handle: TokenizerInfo.Handle(
@@ -38,12 +40,25 @@ extension Grammar {
             )
         }
 
-        /// Estimated memory usage of the compiled grammar, in bytes.
+        /// The estimated memory usage of the compiled grammar,
+        /// in bytes.
         public var memorySize: Int {
             Int(xgrammar_compiled_grammar_memory_size(handle.pointer))
         }
 
-        /// Creates a compiled grammar from serialized JSON data and a tokenizer.
+        /// Creates a compiled grammar from serialized JSON data
+        /// and tokenizer information.
+        ///
+        /// Use this initializer to restore a previously serialized
+        /// compiled grammar.
+        ///
+        /// - Parameters:
+        ///   - jsonData: The serialized JSON representation
+        ///     of a compiled grammar.
+        ///   - tokenizerInfo: The tokenizer information
+        ///     to associate with the compiled grammar.
+        /// - Throws: An error if the JSON data contains invalid UTF-8
+        ///   or fails to deserialize.
         public init(
             jsonData: Data,
             tokenizerInfo: TokenizerInfo
@@ -67,14 +82,22 @@ extension Grammar {
             self.handle = Handle(ptr)
         }
 
-        /// Serializes the compiled grammar to JSON data.
+        /// A JSON representation of the compiled grammar,
+        /// suitable for caching or serialization.
         public var jsonData: Data {
             Data(consumeCString(xgrammar_compiled_grammar_serialize_json(handle.pointer)).utf8)
         }
 
         /// Creates a matcher from this compiled grammar.
         ///
-        /// - Throws: `XGrammarError` if matcher creation fails.
+        /// - Parameters:
+        ///   - stopTokens: Token IDs that signal the end of generation.
+        ///     Pass `nil` to use the stop tokens detected from the tokenizer.
+        ///   - terminatesWithoutStopToken: Whether the matcher can terminate
+        ///     when the grammar is fully matched,
+        ///     even without encountering a stop token.
+        /// - Returns: A new matcher configured for this compiled grammar.
+        /// - Throws: An error if the matcher can't be created.
         public func matcher(
             stopTokens: [Int32]? = nil,
             terminatesWithoutStopToken: Bool = false
@@ -87,10 +110,12 @@ extension Grammar {
         }
     }
 
-    /// Compiles grammars into matchers for a specific tokenizer and caches preprocessing results.
+    /// Compiles grammars for a specific tokenizer,
+    /// caching preprocessing results across repeated compilations.
     ///
-    /// This compiler is bound to a tokenizer and can reuse preprocessing across repeated
-    /// compilations. Use `cache` to inspect or clear cached entries.
+    /// A compiler is bound to a single ``TokenizerInfo``
+    /// and reuses intermediate results when compiling multiple grammars.
+    /// Use ``cache`` to inspect or clear cached entries.
     public actor Compiler {
         private let handle: Handle
         private var compiledJSONCache: Compiled?
@@ -103,7 +128,7 @@ extension Grammar {
             deinit { xgrammar_compiler_destroy(pointer) }
         }
 
-        /// Lazily compiled built-in JSON grammar.
+        /// The built-in JSON grammar, compiled and cached on first access.
         public var compiledJSON: Compiled {
             if let cached = compiledJSONCache {
                 return cached
@@ -117,13 +142,17 @@ extension Grammar {
             return compiled
         }
 
-        /// Creates a compiler bound to a tokenizer.
+        /// Creates a compiler bound to the specified tokenizer.
         ///
         /// - Parameters:
-        ///   - tokenizerInfo: The tokenizer metadata used for compilation.
-        ///   - maximumThreadCount: The maximum number of threads to use during compilation.
-        ///   - cachingEnabled: Whether to enable the internal compilation cache.
-        ///   - cacheSizeLimit: The maximum cache size in bytes, or `nil` for unlimited.
+        ///   - tokenizerInfo: The tokenizer metadata
+        ///     used during compilation.
+        ///   - maximumThreadCount: The maximum number of threads
+        ///     to use during compilation. Defaults to `8`.
+        ///   - cachingEnabled: A Boolean value that indicates
+        ///     whether to cache compilation results. Defaults to `true`.
+        ///   - cacheSizeLimit: The maximum cache size in bytes,
+        ///     or `nil` for unlimited. Defaults to `nil`.
         public init(
             tokenizerInfo: TokenizerInfo,
             maximumThreadCount: Int = 8,
@@ -142,7 +171,11 @@ extension Grammar {
             self.cache = Cache(handle: handle)
         }
 
-        /// Compiles a grammar into a compiled grammar.
+        /// Compiles a grammar for use with this compiler's tokenizer.
+        ///
+        /// - Parameter grammar: The grammar to compile.
+        /// - Returns: A compiled grammar
+        ///   that can be used to create matchers.
         public func compile(_ grammar: Grammar) -> Compiled {
             Compiled(
                 handle: Compiled.Handle(
@@ -151,7 +184,18 @@ extension Grammar {
             )
         }
 
-        /// Compiles a JSON schema into a compiled grammar.
+        /// Compiles a JSON schema into a grammar
+        /// for use with this compiler's tokenizer.
+        ///
+        /// - Parameters:
+        ///   - schema: A JSON Schema definition string.
+        ///   - formatting: The formatting options
+        ///     for generated JSON output. Defaults to ``JSONSchemaFormatting/default``.
+        ///   - strictMode: A Boolean value that indicates
+        ///     whether to disallow unspecified properties and items.
+        ///     Defaults to `true`.
+        /// - Returns: A compiled grammar
+        ///   that constrains output to match the schema.
         public func compile(
             jsonSchema schema: String,
             formatting: JSONSchemaFormatting = .default,
@@ -180,7 +224,7 @@ extension Grammar {
             )
         }
 
-        /// Cache metrics and controls for a compiler.
+        /// Provides access to compilation cache metrics and controls.
         public actor Cache {
             private let handle: Handle
 
@@ -188,18 +232,19 @@ extension Grammar {
                 self.handle = handle
             }
 
-            /// Current cache size in bytes.
+            /// The current cache size, in bytes.
             public var size: Int {
                 Int(xgrammar_compiler_cache_size(handle.pointer))
             }
 
-            /// Cache size limit in bytes.
+            /// The cache size limit in bytes,
+            /// or `nil` if there is no limit.
             public var sizeLimit: Int? {
                 let value = xgrammar_compiler_cache_limit(handle.pointer)
                 return value < 0 ? nil : Int(value)
             }
 
-            /// Clears the compilation cache.
+            /// Removes all entries from the compilation cache.
             public func clear() {
                 xgrammar_compiler_clear_cache(handle.pointer)
             }

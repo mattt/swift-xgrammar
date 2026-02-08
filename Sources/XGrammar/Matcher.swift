@@ -5,20 +5,25 @@ import Cxgrammar
 #endif
 
 extension Grammar {
-    /// A stateful matcher that tracks generation progress and provides token masks.
+    /// A stateful matcher that tracks generation progress
+    /// and provides token masks for constrained decoding.
     ///
-    /// The matcher implements a non-deterministic pushdown automaton (NPDA) and supports
-    /// backtracking. It can compute the set of acceptable next tokens and store them
-    /// into a bitmask for constrained decoding.
+    /// The matcher implements a nondeterministic pushdown automaton
+    /// and supports backtracking.
+    /// At each decoding step, use ``fillNextTokenBitmask(_:index:)``
+    /// to compute which tokens the grammar allows next.
     public final class Matcher: @unchecked Sendable {
         let handle: OpaquePointer
 
         deinit { xgrammar_matcher_destroy(handle) }
 
-        /// A compressed bitmask for constraining next-token selection.
+        /// A compressed bitmask that indicates which tokens
+        /// the grammar allows at a given decoding step.
         ///
-        /// The bitmask is stored as 32-bit words and sized according to the vocabulary.
-        /// Use `maskLogits(_:vocabSize:)` to apply the mask to logits in-place.
+        /// The bitmask is stored as 32-bit words
+        /// and sized according to the vocabulary.
+        /// Use ``maskLogits(_:vocabSize:)`` to apply the mask
+        /// to a logits array in place.
         public struct TokenBitmask: Sendable {
             /// The vocabulary size this bitmask was created for.
             public let vocabSize: Int
@@ -29,7 +34,13 @@ extension Grammar {
             /// The underlying 32-bit word storage.
             var storage: [Int32]
 
-            /// Creates a bitmask for a given batch and vocabulary size.
+            /// Creates a bitmask for the specified batch and vocabulary size.
+            ///
+            /// All bits are initially set to `1` (all tokens allowed).
+            ///
+            /// - Parameters:
+            ///   - batchSize: The number of batch rows. Defaults to `1`.
+            ///   - vocabSize: The number of tokens in the vocabulary.
             public init(batchSize: Int = 1, vocabSize: Int) {
                 precondition(batchSize > 0, "Batch size must be positive.")
                 precondition(vocabSize > 0, "Vocab size must be positive.")
@@ -39,26 +50,35 @@ extension Grammar {
                 self.storage = Array(repeating: -1, count: count)
             }
 
-            /// Resets the bitmask to all-true.
+            /// Resets all bits to `1`, allowing every token.
             public mutating func reset() {
                 storage = Array(repeating: -1, count: storage.count)
             }
 
-            /// The number of 32-bit words per batch row.
+            /// The number of 32-bit words in each batch row.
             var wordsPerBatch: Int {
                 TokenBitmask.wordsPerBatch(vocabSize: vocabSize)
             }
 
-            /// Computes the number of 32-bit words needed for a vocabulary size.
+            /// Returns the number of 32-bit words needed
+            /// to represent a bitmask for the given vocabulary size.
+            ///
+            /// - Parameter vocabSize: The number of tokens in the vocabulary.
+            /// - Returns: The number of `Int32` elements required per batch row.
             public static func wordsPerBatch(vocabSize: Int) -> Int {
                 Int(xgrammar_get_bitmask_size(Int32(vocabSize)))
             }
 
-            /// Applies the bitmask to logits in-place.
+            /// Sets disallowed token logits to negative infinity.
+            ///
+            /// For each token not permitted by this bitmask,
+            /// the corresponding element in `logits` is replaced
+            /// with `-Float.infinity`.
             ///
             /// - Parameters:
-            ///   - logits: The logits to mask in-place.
-            ///   - vocabSize: The number of logits to consider. Defaults to the bitmask's vocab size.
+            ///   - logits: The logits array to mask in place.
+            ///   - vocabSize: The number of logits to consider,
+            ///     or `nil` to use the bitmask's vocabulary size.
             public func maskLogits(_ logits: inout [Float], vocabSize: Int? = nil) {
                 let targetVocabSize = vocabSize ?? self.vocabSize
                 precondition(targetVocabSize > 0, "Vocab size must be positive.")
@@ -76,7 +96,14 @@ extension Grammar {
                 }
             }
 
-            /// Returns whether a token is allowed for a batch index.
+            /// Returns a Boolean value that indicates
+            /// whether the specified token is allowed.
+            ///
+            /// - Parameters:
+            ///   - tokenId: The token identifier to check.
+            ///   - batchIndex: The batch row to query. Defaults to `0`.
+            /// - Returns: `true` if the token is allowed
+            ///   by the bitmask; otherwise, `false`.
             public func isTokenAllowed(_ tokenId: Int, batchIndex: Int = 0) -> Bool {
                 let wordIndex = tokenId / 32
                 let bitIndex = tokenId % 32
@@ -88,12 +115,13 @@ extension Grammar {
             }
         }
 
-        /// Whether the matcher has terminated after accepting a stop token.
+        /// A Boolean value that indicates whether the matcher
+        /// has terminated after accepting a stop token.
         public var isTerminated: Bool {
             xgrammar_matcher_is_terminated(handle)
         }
 
-        /// Stop token IDs used by the matcher.
+        /// The token IDs that signal the end of generation.
         public var stopTokenIDs: [Int32] {
             let count = Int(xgrammar_matcher_stop_token_ids_count(handle))
             var result: [Int32] = []
@@ -109,10 +137,16 @@ extension Grammar {
         /// Creates a matcher for a compiled grammar.
         ///
         /// - Parameters:
-        ///   - compiledGrammar: The compiled grammar that includes tokenizer preprocessing.
-        ///   - stopTokens: Optional stop tokens that override detection.
-        ///   - terminatesWithoutStopToken: Whether the matcher can terminate without a stop token.
-        /// - Throws: `XGrammarError` if matcher creation fails.
+        ///   - compiledGrammar: A compiled grammar
+        ///     that includes tokenizer preprocessing results.
+        ///   - stopTokens: Token IDs that signal the end of generation.
+        ///     Pass `nil` to use the stop tokens
+        ///     detected from the tokenizer.
+        ///   - terminatesWithoutStopToken: A Boolean value that indicates
+        ///     whether the matcher can terminate
+        ///     when the grammar is fully matched,
+        ///     even without encountering a stop token.
+        /// - Throws: An error if the matcher can't be created.
         public init(
             _ compiledGrammar: Grammar.Compiled,
             stopTokens: [Int32]? = nil,
@@ -130,30 +164,45 @@ extension Grammar {
                 )
             }
             guard let ptr else {
-                throw XGrammarError(context: "grammar matcher")
+                throw XGrammarError(runtime: "grammar matcher")
             }
             self.handle = ptr
         }
 
         /// Accepts a token and advances the matcher state.
         ///
-        /// When the end of the root rule is reached, the matcher can only accept a stop token.
+        /// After the root rule is fully matched,
+        /// the matcher only accepts stop tokens.
         ///
-        /// - Returns: `true` if the token is accepted by the grammar.
+        /// - Parameter tokenID: The token identifier to accept.
+        /// - Returns: `true` if the grammar accepted the token;
+        ///   otherwise, `false`.
         @discardableResult
         public func accept(_ tokenID: Int32) -> Bool {
             xgrammar_matcher_accept_token(handle, tokenID)
         }
 
-        /// Accepts a string as a single rollback step.
+        /// Accepts a string and advances the matcher state.
+        ///
+        /// The entire string is treated as a single rollback step.
+        ///
+        /// - Parameter string: The string to accept.
+        /// - Returns: `true` if the grammar accepted the string;
+        ///   otherwise, `false`.
         @discardableResult
         public func accept(_ string: String) -> Bool {
             xgrammar_matcher_accept_string(handle, string)
         }
 
-        /// Fills a token bitmask for the next decoding step.
+        /// Fills a token bitmask with the set of tokens
+        /// the grammar allows at the current decoding step.
         ///
-        /// - Returns: `true` if the bitmask needs to be applied (not all-true).
+        /// - Parameters:
+        ///   - bitmask: The bitmask to fill.
+        ///   - index: The batch row index to fill. Defaults to `0`.
+        /// - Returns: `true` if the bitmask contains at least one
+        ///   disallowed token and needs to be applied;
+        ///   `false` if all tokens are allowed.
         @discardableResult
         public func fillNextTokenBitmask(
             _ bitmask: inout TokenBitmask,
@@ -175,17 +224,30 @@ extension Grammar {
             }
         }
 
-        /// Returns the deterministic jump-forward string from the current state.
+        /// Returns the deterministic jump-forward string
+        /// from the current matcher state, if any.
+        ///
+        /// When the grammar has only one possible continuation,
+        /// this method returns the text that can be appended
+        /// without sampling.
+        ///
+        /// - Returns: The jump-forward string,
+        ///   or an empty string if no deterministic continuation exists.
         public func jumpForwardString() -> String {
             consumeCString(xgrammar_matcher_find_jump_forward_string(handle))
         }
 
-        /// Rolls back the matcher by a number of accepted tokens.
+        /// Rolls back the matcher state
+        /// by the specified number of previously accepted tokens.
+        ///
+        /// - Parameter count: The number of tokens to undo.
+        ///   Defaults to `1`.
         public func rollback(count: Int = 1) {
             xgrammar_matcher_rollback(handle, Int32(count))
         }
 
-        /// Resets the matcher to the initial state.
+        /// Resets the matcher to its initial state,
+        /// discarding all previously accepted tokens.
         public func reset() {
             xgrammar_matcher_reset(handle)
         }
@@ -204,7 +266,12 @@ extension Grammar.Matcher: CustomDebugStringConvertible {
 
 #if canImport(CoreML)
     extension Grammar.Matcher.TokenBitmask {
-        /// Returns a new tensor with masked logits set to `-infinity`.
+        /// Returns a new tensor with disallowed token logits
+        /// set to negative infinity.
+        ///
+        /// - Parameter logits: The logits tensor to mask.
+        /// - Returns: A new tensor with the same shape as `logits`,
+        ///   where disallowed tokens have been set to `-Float.infinity`.
         @available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *)
         public func masking(_ logits: MLTensor) async -> MLTensor {
             let shaped = await logits.shapedArray(of: Float.self)

@@ -1,15 +1,27 @@
 import Cxgrammar
 import Foundation
 
-/// Errors surfaced by the XGrammar Swift API.
+/// An error returned by the XGrammar library.
 public enum XGrammarError: Error, Sendable {
+    /// The serialized data was produced by an incompatible version.
     case deserializeVersion(String)
+
+    /// The serialized data has an invalid format.
     case deserializeFormat(String)
+
+    /// The input isn't valid JSON.
     case invalidJSON(String)
+
+    /// The structural tag definition is malformed.
     case invalidStructuralTag(String)
+
+    /// The JSON Schema definition is invalid.
     case invalidJSONSchema(String)
+
+    /// A general runtime error.
     case runtimeError(String)
 
+    /// Creates an error from a C error kind and message.
     init(kind: xgrammar_error_kind, message: String) {
         switch kind {
         case XGRAMMAR_ERROR_DESERIALIZE_VERSION:
@@ -27,7 +39,8 @@ public enum XGrammarError: Error, Sendable {
         }
     }
 
-    init(context: String) {
+    /// Creates a runtime error describing a failed object creation.
+    init(runtime context: String) {
         self = .runtimeError("XGrammar failed to create \(context).")
     }
 }

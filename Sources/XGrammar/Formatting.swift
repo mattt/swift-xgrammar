@@ -1,18 +1,24 @@
-/// Formatting options used when generating grammars from JSON Schema.
+/// Options that control the formatting of JSON output
+/// when generating grammars from JSON Schema.
 public struct JSONSchemaFormatting: Sendable {
-    /// Whether to allow any whitespace between JSON tokens.
+    /// A Boolean value that indicates whether
+    /// arbitrary whitespace is allowed between JSON tokens.
     public var allowsFlexibleWhitespace: Bool
 
-    /// The indentation width in spaces, or `nil` for single-line output.
+    /// The number of spaces to use for indentation,
+    /// or `nil` for single-line output.
     public var indentation: Int?
 
-    /// The separators used between items and key/value pairs.
+    /// The separator strings used between array items
+    /// and between keys and values,
+    /// or `nil` to use the defaults.
     public var separators: (itemSeparator: String, keyValueSeparator: String)?
 
-    /// The maximum number of whitespace characters to allow, if any.
+    /// The maximum number of consecutive whitespace characters to allow,
+    /// or `nil` for no limit.
     public var maximumWhitespaceCount: Int?
 
-    /// Default formatting with flexible whitespace.
+    /// Default formatting that allows flexible whitespace.
     public static let `default` = JSONSchemaFormatting(allowsFlexibleWhitespace: true)
 
     /// Compact formatting with no extra whitespace.
@@ -21,7 +27,20 @@ public struct JSONSchemaFormatting: Sendable {
         separators: (",", ":")
     )
 
-    /// Creates formatting options for JSON schema grammar generation.
+    /// Creates formatting options for JSON Schema grammar generation.
+    ///
+    /// - Parameters:
+    ///   - allowsFlexibleWhitespace: A Boolean value that indicates
+    ///     whether arbitrary whitespace is allowed between JSON tokens.
+    ///     Defaults to `true`.
+    ///   - indentation: The number of spaces for indentation,
+    ///     or `nil` for single-line output. Defaults to `nil`.
+    ///   - separators: The separator strings for array items
+    ///     and key-value pairs,
+    ///     or `nil` to use the defaults. Defaults to `nil`.
+    ///   - maximumWhitespaceCount: The maximum number
+    ///     of consecutive whitespace characters,
+    ///     or `nil` for no limit. Defaults to `nil`.
     public init(
         allowsFlexibleWhitespace: Bool = true,
         indentation: Int? = nil,

@@ -8,8 +8,8 @@ import Cxgrammar
     import Musl
 #endif
 
-/// Takes ownership of a C string allocated by the bridging layer, converts to
-/// a Swift `String`, and frees the original.
+/// Converts a C string allocated by the bridging layer to a Swift string,
+/// freeing the original.
 @inline(__always)
 func consumeCString(_ ptr: UnsafeMutablePointer<CChar>?) -> String {
     guard let ptr else { return "" }
@@ -18,8 +18,8 @@ func consumeCString(_ ptr: UnsafeMutablePointer<CChar>?) -> String {
     return string
 }
 
-/// Calls `body` with a C-compatible array of C string pointers built from
-/// `strings`. The pointers are valid only for the duration of `body`.
+/// Calls `body` with a temporary C-compatible array of string pointers
+/// built from `strings`.
 func withCStringArray<R>(
     _ strings: [String],
     _ body: (UnsafePointer<UnsafePointer<CChar>?>?, Int32) -> R
