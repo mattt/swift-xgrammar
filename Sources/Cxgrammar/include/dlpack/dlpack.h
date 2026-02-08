@@ -401,9 +401,11 @@ typedef struct DLManagedTensorVersioned {
  *
  * \sa DLPackExchangeAPI
  */
-typedef int (*DLPackManagedTensorAllocator)(                                         //
-  DLTensor* prototype, DLManagedTensorVersioned** out, void* error_ctx,              //
-  void (*SetError)(void* error_ctx, const char* kind, const char* message)           //
+typedef int (*DLPackManagedTensorAllocator)(  //
+    DLTensor* prototype,
+    DLManagedTensorVersioned** out,
+    void* error_ctx,                                                          //
+    void (*SetError)(void* error_ctx, const char* kind, const char* message)  //
 );
 
 /*!
@@ -424,9 +426,9 @@ typedef int (*DLPackManagedTensorAllocator)(                                    
  *
  * \sa DLPackExchangeAPI, DLPackCurrentWorkStream
  */
-typedef int (*DLPackManagedTensorFromPyObjectNoSync)(                 //
-  void* py_object,                                                    //
-  DLManagedTensorVersioned** out                                      //
+typedef int (*DLPackManagedTensorFromPyObjectNoSync)(  //
+    void* py_object,                                   //
+    DLManagedTensorVersioned** out                     //
 );
 
 /*!
@@ -453,9 +455,9 @@ typedef int (*DLPackManagedTensorFromPyObjectNoSync)(                 //
  *
  * \sa DLPackExchangeAPI, DLPackCurrentWorkStream
  */
-typedef int (*DLPackDLTensorFromPyObjectNoSync)(                      //
-  void* py_object,                                                    //
-  DLTensor* out                                                       //
+typedef int (*DLPackDLTensorFromPyObjectNoSync)(  //
+    void* py_object,                              //
+    DLTensor* out                                 //
 );
 
 /*!
@@ -479,10 +481,10 @@ typedef int (*DLPackDLTensorFromPyObjectNoSync)(                      //
  *
  * \sa DLPackExchangeAPI
  */
-typedef int (*DLPackCurrentWorkStream)(                         //
-  DLDeviceType device_type,                                     //
-  int32_t device_id,                                            //
-  void** out_current_stream                                     //
+typedef int (*DLPackCurrentWorkStream)(  //
+    DLDeviceType device_type,            //
+    int32_t device_id,                   //
+    void** out_current_stream            //
 );
 
 /*!
@@ -502,9 +504,9 @@ typedef int (*DLPackCurrentWorkStream)(                         //
  *
  * \sa DLPackExchangeAPI
  */
-typedef int (*DLPackManagedTensorToPyObjectNoSync)(                //
-  DLManagedTensorVersioned* tensor,                                //
-  void** out_py_object                                             //
+typedef int (*DLPackManagedTensorToPyObjectNoSync)(  //
+    DLManagedTensorVersioned* tensor,                //
+    void** out_py_object                             //
 );
 
 /*!

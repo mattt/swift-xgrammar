@@ -43,8 +43,7 @@ class StructuralTagParser {
   Result<Format, ISTError> ParseFormat(const picojson::value& value);
   Result<ConstStringFormat, ISTError> ParseConstStringFormat(const picojson::object& value);
   Result<JSONSchemaFormat, ISTError> ParseJSONSchemaFormat(const picojson::object& value);
-  Result<QwenXmlParameterFormat, ISTError> ParseQwenXmlParameterFormat(
-      const picojson::object& value
+  Result<QwenXmlParameterFormat, ISTError> ParseQwenXmlParameterFormat(const picojson::object& value
   );
   Result<AnyTextFormat, ISTError> ParseAnyTextFormat(const picojson::object& value);
   Result<GrammarFormat, ISTError> ParseGrammarFormat(const picojson::object& value);
@@ -73,8 +72,7 @@ Result<StructuralTag, StructuralTagError> StructuralTagParser::FromJSON(const st
   );
 }
 
-Result<StructuralTag, ISTError> StructuralTagParser::ParseStructuralTag(
-    const picojson::value& value
+Result<StructuralTag, ISTError> StructuralTagParser::ParseStructuralTag(const picojson::value& value
 ) {
   if (!value.is<picojson::object>()) {
     return ResultErr<ISTError>("Structural tag must be an object");
@@ -179,8 +177,7 @@ Result<ConstStringFormat, ISTError> StructuralTagParser::ParseConstStringFormat(
   auto value_it = obj.find("value");
   if (value_it == obj.end() || !value_it->second.is<std::string>() ||
       value_it->second.get<std::string>().empty()) {
-    return ResultErr<ISTError>(
-        "ConstString format must have a value field with a non-empty string"
+    return ResultErr<ISTError>("ConstString format must have a value field with a non-empty string"
     );
   }
   return ResultOk<ConstStringFormat>(value_it->second.get<std::string>());
@@ -216,8 +213,7 @@ Result<QwenXmlParameterFormat, ISTError> StructuralTagParser::ParseQwenXmlParame
   return ResultOk<QwenXmlParameterFormat>(json_schema_it->second.serialize(false));
 }
 
-Result<AnyTextFormat, ISTError> StructuralTagParser::ParseAnyTextFormat(
-    const picojson::object& obj
+Result<AnyTextFormat, ISTError> StructuralTagParser::ParseAnyTextFormat(const picojson::object& obj
 ) {
   auto excluded_strs_it = obj.find("excludes");
   if (excluded_strs_it == obj.end()) {
@@ -241,8 +237,7 @@ Result<AnyTextFormat, ISTError> StructuralTagParser::ParseAnyTextFormat(
   return ResultOk<AnyTextFormat>(std::move(excluded_strs));
 }
 
-Result<GrammarFormat, ISTError> StructuralTagParser::ParseGrammarFormat(
-    const picojson::object& obj
+Result<GrammarFormat, ISTError> StructuralTagParser::ParseGrammarFormat(const picojson::object& obj
 ) {
   // grammar is required.
   auto grammar_it = obj.find("grammar");
@@ -412,16 +407,14 @@ Result<TriggeredTagsFormat, ISTError> StructuralTagParser::ParseTriggeredTagsFor
   auto excludes_it = obj.find("excludes");
   if (excludes_it != obj.end()) {
     if (!excludes_it->second.is<picojson::array>()) {
-      return ResultErr<ISTError>(
-          "Triggered tags format should have a excludes field with an array"
+      return ResultErr<ISTError>("Triggered tags format should have a excludes field with an array"
       );
     }
     const auto& excludes_array = excludes_it->second.get<picojson::array>();
     excluded_strs.reserve(excludes_array.size());
     for (const auto& excluded_str : excludes_array) {
       if (!excluded_str.is<std::string>() || excluded_str.get<std::string>().empty()) {
-        return ResultErr<ISTError>(
-            "Triggered tags format's excluded_strs must be non-empty strings"
+        return ResultErr<ISTError>("Triggered tags format's excluded_strs must be non-empty strings"
         );
       }
       excluded_strs.push_back(excluded_str.get<std::string>());
@@ -792,8 +785,7 @@ bool StructuralTagGrammarConverter::IsPrefix(
          std::string_view(full_str).substr(0, prefix.size()) == prefix;
 }
 
-Result<Grammar, ISTError> StructuralTagGrammarConverter::Convert(
-    const StructuralTag& structural_tag
+Result<Grammar, ISTError> StructuralTagGrammarConverter::Convert(const StructuralTag& structural_tag
 ) {
   auto converter = StructuralTagGrammarConverter();
   auto result = converter.Visit(structural_tag.format);
@@ -830,8 +822,7 @@ Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const JSONSchemaFo
   return ResultOk(added_root_rule_id);
 }
 
-Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(
-    const QwenXmlParameterFormat& format
+Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const QwenXmlParameterFormat& format
 ) {
   auto sub_grammar = Grammar::FromEBNF(QwenXMLToolCallingToEBNF(format.xml_schema));
   auto added_root_rule_id = SubGrammarAdder().Apply(&grammar_builder_, sub_grammar);
@@ -965,8 +956,7 @@ Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const TriggeredTag
       const auto& trigger = format.triggers[it_trigger];
       if (IsPrefix(trigger, tag.begin)) {
         if (matched_trigger_id != -1) {
-          return ResultErr<ISTError>(
-              "One tag matches multiple triggers in a triggered tags format"
+          return ResultErr<ISTError>("One tag matches multiple triggers in a triggered tags format"
           );
         }
         matched_trigger_id = it_trigger;
@@ -1115,11 +1105,9 @@ Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const TriggeredTag
         non_empty_ends.push_back(s);
       }
     }
-    rule_expr_id = grammar_builder_.AddTagDispatch(
-        Grammar::Impl::TagDispatch{
-            tag_rule_pairs, false, non_empty_ends, loop_after_dispatch, format.excludes
-        }
-    );
+    rule_expr_id = grammar_builder_.AddTagDispatch(Grammar::Impl::TagDispatch{
+        tag_rule_pairs, false, non_empty_ends, loop_after_dispatch, format.excludes
+    });
   } else {
     rule_expr_id = grammar_builder_.AddTagDispatch(
         Grammar::Impl::TagDispatch{tag_rule_pairs, true, {}, loop_after_dispatch, format.excludes}
@@ -1180,8 +1168,7 @@ Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const TriggeredTag
   return ResultOk(rule_id);
 }
 
-Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(
-    const TagsWithSeparatorFormat& format
+Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(const TagsWithSeparatorFormat& format
 ) {
   // The grammar:
   // Step 1. tags_rule: call tags
@@ -1305,8 +1292,7 @@ Result<int, ISTError> StructuralTagGrammarConverter::VisitSub(
 
   // Step 3.2 Construct root rule
   std::vector<int> choices = {
-      grammar_builder_.AddSequence(
-          {all_tags_rule_ref_id, grammar_builder_.AddRuleRef(sub_rule_id)}
+      grammar_builder_.AddSequence({all_tags_rule_ref_id, grammar_builder_.AddRuleRef(sub_rule_id)}
       ),
   };
   if (!format.at_least_one) {

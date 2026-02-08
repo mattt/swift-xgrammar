@@ -1,5 +1,5 @@
 SWIFT ?= swift
-CLANG_FORMAT ?= clang-format
+CLANG_FORMAT ?= xcrun clang-format
 
 # C/C++ sources to format/lint
 CPP_SOURCES ?= $(shell find Sources/Cxgrammar -type f \( -name '*.h' -o -name '*.c' -o -name '*.cc' \))
@@ -22,7 +22,7 @@ format: format-swift format-cpp
 
 # Format C/C++ bridge sources
 format-cpp:
-	$(CLANG_FORMAT) -i $(CPP_SOURCES)
+	$(CLANG_FORMAT) -style=file -i $(CPP_SOURCES)
 
 # Format Swift sources
 format-swift:
@@ -33,7 +33,7 @@ lint: lint-swift lint-cpp
 
 # Lint C/C++ bridge formatting
 lint-cpp:
-	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SOURCES)
+	$(CLANG_FORMAT) -style=file --dry-run --Werror $(CPP_SOURCES)
 
 # Lint Swift formatting
 lint-swift:

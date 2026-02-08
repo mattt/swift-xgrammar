@@ -45,8 +45,7 @@ class GrammarMatcherForTokenMaskCache : public EarleyParser {
       : EarleyParser(grammar, init_state),
         init_rule_id(init_state.rule_id),
         initial_state(init_state),
-        tag_dispatch_rule_id_to_second_slicing_bitset(
-            tag_dispatch_rule_id_to_second_slicing_bitset
+        tag_dispatch_rule_id_to_second_slicing_bitset(tag_dispatch_rule_id_to_second_slicing_bitset
         ) {}
   /*!
    * \brief Get the adaptive token mask for the given ParserState.
@@ -783,15 +782,12 @@ CompiledGrammar GrammarCompilerNoCache::CompileJSONSchema(
     bool strict_mode,
     std::optional<int> max_whitespace_cnt
 ) {
-  return MultiThreadCompileGrammar(
-      Grammar::FromJSONSchema(
-          schema, any_whitespace, indent, separators, strict_mode, max_whitespace_cnt
-      )
-  );
+  return MultiThreadCompileGrammar(Grammar::FromJSONSchema(
+      schema, any_whitespace, indent, separators, strict_mode, max_whitespace_cnt
+  ));
 }
 
-CompiledGrammar GrammarCompilerNoCache::CompileStructuralTag(
-    const std::string& structural_tag_json
+CompiledGrammar GrammarCompilerNoCache::CompileStructuralTag(const std::string& structural_tag_json
 ) {
   auto result = Grammar::FromStructuralTag(structural_tag_json);
   XGRAMMAR_CHECK(std::holds_alternative<Grammar>(result))
@@ -1087,8 +1083,7 @@ CompiledGrammar GrammarCompiler::Impl::CompileJSONSchema(
   );
 }
 
-CompiledGrammar GrammarCompiler::Impl::CompileStructuralTag(
-    const std::string& structural_tag_json
+CompiledGrammar GrammarCompiler::Impl::CompileStructuralTag(const std::string& structural_tag_json
 ) {
   if (!cache_enabled_) {
     return no_cache_compiler_.CompileStructuralTag(structural_tag_json);
