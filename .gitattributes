@@ -1,0 +1,4 @@
+Sources/Cxgrammar/** linguist-vendored
+Sources/Cxgrammar/bridging.cc !linguist-vendored
+Sources/Cxgrammar/include/module.modulemap !linguist-vendored
+Sources/Cxgrammar/include/bridging.h !linguist-vendored
