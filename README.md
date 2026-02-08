@@ -28,7 +28,7 @@ dependencies: [
 
 ### Creating a Grammar
 
-Construct grammars from EBNF definitions, JSON schemas, regex patterns, or structural tags:
+Create grammars from EBNF definitions, JSON schemas, regex patterns, or structural tags:
 
 ```swift
 import XGrammar
@@ -102,12 +102,12 @@ let sequence = try Grammar.sequence([
 
 ### Constrained Decoding
 
-Set up a tokenizer, compile a grammar, and use a matcher to constrain token selection during decoding:
+Compile a grammar for your tokenizer and use a matcher to constrain token selection:
 
 ```swift
 // Create tokenizer info from your model's vocabulary
 let tokenizerInfo = try TokenizerInfo(
-    encodedVocab: vocab,
+    encodedVocab: vocab,  // [String] from your tokenizer
     encoding: .byteLevel
 )
 
@@ -131,7 +131,7 @@ matcher.accept(selectedTokenID)
 
 ### CoreML Integration
 
-On Apple platforms, apply the bitmask directly to an `MLTensor`:
+On Apple platforms (macOS 15+, iOS 18+), apply the bitmask directly to an `MLTensor`:
 
 ```swift
 #if canImport(CoreML)
