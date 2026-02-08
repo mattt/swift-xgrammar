@@ -10,6 +10,7 @@ It ensures 100% structural correctness of generated output with near-zero overhe
 ## Requirements
 
 - Swift 6.0+ / Xcode 16+
+- macOS 13+, iOS 16+, tvOS 16+, watchOS 9+, visionOS 1+, or Linux
 
 ## Installation
 
@@ -196,6 +197,11 @@ Verify formatting:
 ```bash
 make lint
 ```
+
+## Acknowledgments
+
+This package vendors C++ sources from 
+[xgrammar](https://github.com/mlc-ai/xgrammar) v0.1.31.
 
 ## License
 

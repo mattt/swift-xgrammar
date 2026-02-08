@@ -5,15 +5,15 @@ import Testing
 @Suite("Configuration Tests")
 struct ConfigurationTests {
     @Test func maxRecursionDepthRoundTrip() {
-        let original = XGrammar.Configuration.maxRecursionDepth
-        defer { XGrammar.Configuration.maxRecursionDepth = original }
+        let original = Grammar.Configuration.maxRecursionDepth
+        defer { Grammar.Configuration.maxRecursionDepth = original }
 
-        XGrammar.Configuration.maxRecursionDepth = original + 1
-        #expect(XGrammar.Configuration.maxRecursionDepth == original + 1)
-        #expect(XGrammar.Configuration.maxRecursionDepth > 0)
+        Grammar.Configuration.maxRecursionDepth = original + 1
+        #expect(Grammar.Configuration.maxRecursionDepth == original + 1)
+        #expect(Grammar.Configuration.maxRecursionDepth > 0)
     }
 
     @Test func serializationVersionIsNonEmpty() {
-        #expect(!XGrammar.Configuration.serializationVersion.isEmpty)
+        #expect(!Grammar.Configuration.serializationVersion.isEmpty)
     }
 }

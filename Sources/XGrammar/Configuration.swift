@@ -1,8 +1,6 @@
 import Cxgrammar
 
-public enum XGrammar {}
-
-extension XGrammar {
+extension Grammar {
     /// Global XGrammar configuration.
     public enum Configuration {
         /// The maximum recursion depth for grammar parsing.

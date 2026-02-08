@@ -27,7 +27,10 @@ public struct Grammar: @unchecked Sendable {
     public static let json = Grammar(handle: Handle(xgrammar_grammar_create_builtin_json()))
 
     /// Returns a grammar that matches any of the provided grammars.
+    ///
+    /// - Precondition: `grammars` must not be empty.
     public static func anyOf(_ grammars: [Grammar]) -> Grammar {
+        precondition(!grammars.isEmpty, "Grammar.anyOf requires at least one grammar.")
         var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
         let result = handles.withUnsafeMutableBufferPointer { buf in
             xgrammar_grammar_create_union(buf.baseAddress, Int32(buf.count))
@@ -36,7 +39,10 @@ public struct Grammar: @unchecked Sendable {
     }
 
     /// Returns a grammar that matches the concatenation of the provided grammars.
+    ///
+    /// - Precondition: `grammars` must not be empty.
     public static func sequence(_ grammars: [Grammar]) -> Grammar {
+        precondition(!grammars.isEmpty, "Grammar.sequence requires at least one grammar.")
         var handles: [OpaquePointer?] = grammars.map { $0.handle.pointer }
         let result = handles.withUnsafeMutableBufferPointer { buf in
             xgrammar_grammar_create_concat(buf.baseAddress, Int32(buf.count))

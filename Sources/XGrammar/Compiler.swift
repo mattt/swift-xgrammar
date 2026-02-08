@@ -91,6 +91,7 @@ extension Grammar {
     /// compilations. Use `cache` to inspect or clear cached entries.
     public final class Compiler: @unchecked Sendable {
         private let handle: Handle
+        private let compiledJSONLock = NSLock()
         private var compiledJSONCache: Compiled?
 
         /// ARC-managed wrapper around the opaque C handle.
@@ -102,6 +103,8 @@ extension Grammar {
 
         /// Lazily compiled built-in JSON grammar.
         public var compiledJSON: Compiled {
+            compiledJSONLock.lock()
+            defer { compiledJSONLock.unlock() }
             if let cached = compiledJSONCache {
                 return cached
             }
