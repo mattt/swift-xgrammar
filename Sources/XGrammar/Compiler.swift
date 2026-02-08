@@ -89,13 +89,13 @@ extension Grammar {
     ///
     /// This compiler is bound to a tokenizer and can reuse preprocessing across repeated
     /// compilations. Use `cache` to inspect or clear cached entries.
-    public final class Compiler: @unchecked Sendable {
+    public actor Compiler {
         private let handle: Handle
-        private let compiledJSONLock = NSLock()
         private var compiledJSONCache: Compiled?
+        public let cache: Cache
 
         /// ARC-managed wrapper around the opaque C handle.
-        private final class Handle: @unchecked Sendable {
+        final class Handle: @unchecked Sendable {
             let pointer: OpaquePointer
             init(_ pointer: OpaquePointer) { self.pointer = pointer }
             deinit { xgrammar_compiler_destroy(pointer) }
@@ -103,8 +103,6 @@ extension Grammar {
 
         /// Lazily compiled built-in JSON grammar.
         public var compiledJSON: Compiled {
-            compiledJSONLock.lock()
-            defer { compiledJSONLock.unlock() }
             if let cached = compiledJSONCache {
                 return cached
             }
@@ -115,11 +113,6 @@ extension Grammar {
             )
             compiledJSONCache = compiled
             return compiled
-        }
-
-        /// Cache metrics and controls for this compiler.
-        public var cache: Cache {
-            Cache(compiler: self)
         }
 
         /// Creates a compiler bound to a tokenizer.
@@ -135,7 +128,7 @@ extension Grammar {
             cachingEnabled: Bool = true,
             cacheSizeLimit: Int? = nil
         ) {
-            self.handle = Handle(
+            let handle = Handle(
                 xgrammar_compiler_create(
                     tokenizerInfo.handle.pointer,
                     Int32(maximumThreadCount),
@@ -143,6 +136,8 @@ extension Grammar {
                     Int64(cacheSizeLimit ?? -1)
                 )
             )
+            self.handle = handle
+            self.cache = Cache(handle: handle)
         }
 
         /// Compiles a grammar into a compiled grammar.
@@ -184,23 +179,27 @@ extension Grammar {
         }
 
         /// Cache metrics and controls for a compiler.
-        public struct Cache: @unchecked Sendable {
-            fileprivate unowned let compiler: Compiler
+        public actor Cache {
+            private let handle: Handle
+
+            fileprivate init(handle: Handle) {
+                self.handle = handle
+            }
 
             /// Current cache size in bytes.
             public var size: Int {
-                Int(xgrammar_compiler_cache_size(compiler.handle.pointer))
+                Int(xgrammar_compiler_cache_size(handle.pointer))
             }
 
             /// Cache size limit in bytes.
             public var sizeLimit: Int? {
-                let value = xgrammar_compiler_cache_limit(compiler.handle.pointer)
+                let value = xgrammar_compiler_cache_limit(handle.pointer)
                 return value < 0 ? nil : Int(value)
             }
 
             /// Clears the compilation cache.
             public func clear() {
-                xgrammar_compiler_clear_cache(compiler.handle.pointer)
+                xgrammar_compiler_clear_cache(handle.pointer)
             }
         }
     }

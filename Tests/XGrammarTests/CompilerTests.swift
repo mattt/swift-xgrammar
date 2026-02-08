@@ -4,28 +4,28 @@ import Testing
 
 @Suite("Compiler Tests")
 struct CompilerTests {
-    @Test func basicCompileReturnsCompiledGrammar() {
+    @Test func basicCompileReturnsCompiledGrammar() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        let compiled = compiler.compile(grammar)
+        let compiled = await compiler.compile(grammar)
         #expect(compiled.memorySize > 0)
     }
 
-    @Test func compiledJSONIsStable() {
+    @Test func compiledJSONIsStable() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let first = compiler.compiledJSON
-        let second = compiler.compiledJSON
+        let first = await compiler.compiledJSON
+        let second = await compiler.compiledJSON
         #expect(first.jsonData == second.jsonData)
         #expect(first.grammar.description.contains("root"))
     }
 
-    @Test func compileJSONSchemaUsesFormatting() {
+    @Test func compileJSONSchemaUsesFormatting() async {
         let tokenizer = TokenizerInfo(encodedVocab: makeJSONVocab())
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
         let schema = #"{"type":"string"}"#
-        let compiled = compiler.compile(
+        let compiled = await compiler.compile(
             jsonSchema: schema,
             formatting: .compact,
             strictMode: true
@@ -33,19 +33,19 @@ struct CompilerTests {
         #expect(compiled.memorySize > 0)
     }
 
-    @Test func cacheSizeUpdatesAndClears() {
+    @Test func cacheSizeUpdatesAndClears() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let before = compiler.cache.size
-        _ = compiler.compile(Grammar(ebnf: #"root ::= "a""#))
-        let after = compiler.cache.size
+        let before = await compiler.cache.size
+        _ = await compiler.compile(Grammar(ebnf: #"root ::= "a""#))
+        let after = await compiler.cache.size
         #expect(after >= before)
-        compiler.cache.clear()
-        let cleared = compiler.cache.size
+        await compiler.cache.clear()
+        let cleared = await compiler.cache.size
         #expect(cleared <= after)
     }
 
-    @Test func cacheSizeLimitReflectsConstructor() {
+    @Test func cacheSizeLimitReflectsConstructor() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(
             tokenizerInfo: tokenizer,
@@ -53,10 +53,11 @@ struct CompilerTests {
             cachingEnabled: true,
             cacheSizeLimit: 1024
         )
-        #expect(compiler.cache.sizeLimit == 1024)
+        let limit = await compiler.cache.sizeLimit
+        #expect(limit == 1024)
     }
 
-    @Test func compilerRespectsCachingDisabled() {
+    @Test func compilerRespectsCachingDisabled() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(
             tokenizerInfo: tokenizer,
@@ -64,22 +65,22 @@ struct CompilerTests {
             cachingEnabled: false,
             cacheSizeLimit: nil
         )
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "a""#))
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "a""#))
         #expect(compiled.memorySize > 0)
     }
 
-    @Test func compiledAccessorsReturnExpectedValues() {
+    @Test func compiledAccessorsReturnExpectedValues() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "a""#))
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "a""#))
         #expect(compiled.grammar.description.contains("root"))
         #expect(compiled.tokenizerInfo.vocabulary.size == tokenizer.vocabulary.size)
     }
 
-    @Test func compiledSerializationRoundTrip() throws {
+    @Test func compiledSerializationRoundTrip() async throws {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "a""#))
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "a""#))
         let serialized = compiled.jsonData
         let restored = try Grammar.Compiled(jsonData: serialized, tokenizerInfo: tokenizer)
         #expect(restored.memorySize > 0)

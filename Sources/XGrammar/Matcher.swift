@@ -10,15 +10,10 @@ extension Grammar {
     /// The matcher implements a non-deterministic pushdown automaton (NPDA) and supports
     /// backtracking. It can compute the set of acceptable next tokens and store them
     /// into a bitmask for constrained decoding.
-    public struct Matcher: @unchecked Sendable {
-        let handle: Handle
+    public final class Matcher: @unchecked Sendable {
+        let handle: OpaquePointer
 
-        /// ARC-managed wrapper around the opaque C handle.
-        final class Handle: @unchecked Sendable {
-            let pointer: OpaquePointer
-            init(_ pointer: OpaquePointer) { self.pointer = pointer }
-            deinit { xgrammar_matcher_destroy(pointer) }
-        }
+        deinit { xgrammar_matcher_destroy(handle) }
 
         /// A compressed bitmask for constraining next-token selection.
         ///
@@ -95,17 +90,17 @@ extension Grammar {
 
         /// Whether the matcher has terminated after accepting a stop token.
         public var isTerminated: Bool {
-            xgrammar_matcher_is_terminated(handle.pointer)
+            xgrammar_matcher_is_terminated(handle)
         }
 
         /// Stop token IDs used by the matcher.
         public var stopTokenIDs: [Int32] {
-            let count = Int(xgrammar_matcher_stop_token_ids_count(handle.pointer))
+            let count = Int(xgrammar_matcher_stop_token_ids_count(handle))
             var result: [Int32] = []
             result.reserveCapacity(count)
             for index in 0 ..< count {
                 result.append(
-                    xgrammar_matcher_stop_token_id_at(handle.pointer, Int32(index))
+                    xgrammar_matcher_stop_token_id_at(handle, Int32(index))
                 )
             }
             return result
@@ -133,7 +128,7 @@ extension Grammar {
                     -1
                 )
             }
-            self.handle = Handle(ptr!)
+            self.handle = ptr!
         }
 
         /// Accepts a token and advances the matcher state.
@@ -142,21 +137,21 @@ extension Grammar {
         ///
         /// - Returns: `true` if the token is accepted by the grammar.
         @discardableResult
-        public mutating func accept(_ tokenID: Int32) -> Bool {
-            xgrammar_matcher_accept_token(handle.pointer, tokenID)
+        public func accept(_ tokenID: Int32) -> Bool {
+            xgrammar_matcher_accept_token(handle, tokenID)
         }
 
         /// Accepts a string as a single rollback step.
         @discardableResult
-        public mutating func accept(_ string: String) -> Bool {
-            xgrammar_matcher_accept_string(handle.pointer, string)
+        public func accept(_ string: String) -> Bool {
+            xgrammar_matcher_accept_string(handle, string)
         }
 
         /// Fills a token bitmask for the next decoding step.
         ///
         /// - Returns: `true` if the bitmask needs to be applied (not all-true).
         @discardableResult
-        public mutating func fillNextTokenBitmask(
+        public func fillNextTokenBitmask(
             _ bitmask: inout TokenBitmask,
             index: Int = 0
         ) -> Bool {
@@ -168,7 +163,7 @@ extension Grammar {
                     return false
                 }
                 return xgrammar_matcher_fill_next_token_bitmask(
-                    handle.pointer,
+                    handle,
                     base,
                     Int32(rowCount),
                     Int32(index)
@@ -177,18 +172,18 @@ extension Grammar {
         }
 
         /// Returns the deterministic jump-forward string from the current state.
-        public mutating func jumpForwardString() -> String {
-            consumeCString(xgrammar_matcher_find_jump_forward_string(handle.pointer))
+        public func jumpForwardString() -> String {
+            consumeCString(xgrammar_matcher_find_jump_forward_string(handle))
         }
 
         /// Rolls back the matcher by a number of accepted tokens.
-        public mutating func rollback(count: Int = 1) {
-            xgrammar_matcher_rollback(handle.pointer, Int32(count))
+        public func rollback(count: Int = 1) {
+            xgrammar_matcher_rollback(handle, Int32(count))
         }
 
         /// Resets the matcher to the initial state.
-        public mutating func reset() {
-            xgrammar_matcher_reset(handle.pointer)
+        public func reset() {
+            xgrammar_matcher_reset(handle)
         }
     }
 }
@@ -197,7 +192,7 @@ extension Grammar {
 
 extension Grammar.Matcher: CustomDebugStringConvertible {
     public var debugDescription: String {
-        consumeCString(xgrammar_matcher_debug_print(handle.pointer))
+        consumeCString(xgrammar_matcher_debug_print(handle))
     }
 }
 

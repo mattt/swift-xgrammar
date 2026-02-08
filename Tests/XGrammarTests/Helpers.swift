@@ -11,7 +11,7 @@ func allowedTokenIndices(
     var result: [Int] = []
     let wordsPerBatch = bitmask.wordsPerBatch
     let baseOffset = batchIndex * wordsPerBatch
-    for tokenId in 0..<vocabSize {
+    for tokenId in 0 ..< vocabSize {
         let wordIndex = tokenId / 32
         let bitIndex = tokenId % 32
         let storageIndex = baseOffset + wordIndex

@@ -4,13 +4,13 @@ import Testing
 
 @Suite("Grammar Composition Tests")
 struct GrammarCompositionTests {
-    @Test func anyOfAcceptsEitherGrammar() {
+    @Test func anyOfAcceptsEitherGrammar() async {
         let tokenizer = TokenizerInfo(encodedVocab: ["a", "b"])
         let grammarA = Grammar(ebnf: #"root ::= "a""#)
         let grammarB = Grammar(ebnf: #"root ::= "b""#)
         let combined = Grammar.anyOf([grammarA, grammarB])
 
-        var matcher = combined.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await combined.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let acceptedA = matcher.accept("a")
         #expect(acceptedA)
         matcher.reset()
@@ -18,14 +18,14 @@ struct GrammarCompositionTests {
         #expect(acceptedB)
     }
 
-    @Test func sequenceRequiresOrder() {
+    @Test func sequenceRequiresOrder() async {
         let vocab = ["a", "b"]
         let tokenizer = TokenizerInfo(encodedVocab: vocab)
         let grammarA = Grammar(ebnf: #"root ::= "a""#)
         let grammarB = Grammar(ebnf: #"root ::= "b""#)
         let combined = Grammar.sequence([grammarA, grammarB])
 
-        var matcher = combined.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await combined.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let acceptedOpen = matcher.accept(Int32(0))
         #expect(acceptedOpen)
         let acceptedClose = matcher.accept(Int32(1))

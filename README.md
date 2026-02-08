@@ -112,10 +112,10 @@ let tokenizerInfo = TokenizerInfo(
 )
 
 // Compile the grammar for this tokenizer
-let compiled = grammar.compiled(for: tokenizerInfo)
+let compiled = await grammar.compiled(for: tokenizerInfo)
 
 // Create a matcher for constrained decoding
-var matcher = compiled.matcher()
+let matcher = compiled.matcher()
 
 // Allocate a token bitmask
 var bitmask = Grammar.Matcher.TokenBitmask(
@@ -152,15 +152,15 @@ let compiler = Grammar.Compiler(
     cacheSizeLimit: 100 * 1024 * 1024  // 100 MB
 )
 
-let compiled1 = compiler.compile(grammar1)
-let compiled2 = compiler.compile(grammar2)
+let compiled1 = await compiler.compile(grammar1)
+let compiled2 = await compiler.compile(grammar2)
 
 // Access the pre-compiled built-in JSON grammar
-let compiledJSON = compiler.compiledJSON
+let compiledJSON = await compiler.compiledJSON
 
 // Inspect cache usage
-print(compiler.cache.size)
-compiler.cache.clear()
+print(await compiler.cache.size)
+await compiler.cache.clear()
 ```
 
 ### Serialization

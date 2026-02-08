@@ -4,11 +4,11 @@ import Testing
 
 @Suite("Matcher Tests")
 struct MatcherTests {
-    @Test func acceptTokenSequence() {
+    @Test func acceptTokenSequence() async {
         let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c"])
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "a" "b""#))
-        var matcher = Grammar.Matcher(compiled)
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "a" "b""#))
+        let matcher = Grammar.Matcher(compiled)
 
         let rejected = matcher.accept(2)
         #expect(rejected == false)
@@ -18,20 +18,20 @@ struct MatcherTests {
         #expect(acceptedB == true)
     }
 
-    @Test func acceptString() {
+    @Test func acceptString() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        var matcher = Grammar.Matcher(grammar.compiled(for: tokenizer), terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let accepted = matcher.accept("a")
         #expect(accepted)
     }
 
-    @Test func fillNextTokenBitmaskConstrainsTokens() {
+    @Test func fillNextTokenBitmaskConstrainsTokens() async {
         let vocab = ["{", "}", "a", "b"]
         let tokenizer = TokenizerInfo(encodedVocab: vocab)
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "{" "a" "}""#))
-        var matcher = Grammar.Matcher(compiled, terminatesWithoutStopToken: true)
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "{" "a" "}""#))
+        let matcher = Grammar.Matcher(compiled, terminatesWithoutStopToken: true)
         var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 1, vocabSize: vocab.count)
 
         _ = matcher.fillNextTokenBitmask(&bitmask)
@@ -55,12 +55,12 @@ struct MatcherTests {
         #expect(matcher.isTerminated)
     }
 
-    @Test func builtinJSONTokenFlow() {
+    @Test func builtinJSONTokenFlow() async {
         let vocab = makeJSONVocab()
         let tokenizer = TokenizerInfo(encodedVocab: vocab)
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compiledJSON
-        var matcher = Grammar.Matcher(compiled, terminatesWithoutStopToken: true)
+        let compiled = await compiler.compiledJSON
+        let matcher = Grammar.Matcher(compiled, terminatesWithoutStopToken: true)
         var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 1, vocabSize: vocab.count)
 
         let tokenIds = ["{", "\"", "a", "\"", ":", "\"", "b", "\"", "}"]
@@ -79,10 +79,10 @@ struct MatcherTests {
         }
     }
 
-    @Test func terminationStateChanges() {
+    @Test func terminationStateChanges() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a" "b""#)
-        var matcher = grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         #expect(!matcher.isTerminated)
         _ = matcher.accept(0)
         #expect(!matcher.isTerminated)
@@ -90,10 +90,10 @@ struct MatcherTests {
         #expect(matcher.isTerminated)
     }
 
-    @Test func rollbackRestoresState() {
+    @Test func rollbackRestoresState() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a" "b""#)
-        var matcher = grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let acceptedA = matcher.accept(0)
         #expect(acceptedA)
         let acceptedB = matcher.accept(1)
@@ -104,10 +104,10 @@ struct MatcherTests {
         #expect(acceptedAgain)
     }
 
-    @Test func resetRestoresInitialState() {
+    @Test func resetRestoresInitialState() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        var matcher = grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let acceptedA = matcher.accept(0)
         #expect(acceptedA)
         matcher.reset()
@@ -115,51 +115,51 @@ struct MatcherTests {
         #expect(acceptedAfterReset)
     }
 
-    @Test func jumpForwardStringReturnsDeterministicText() {
+    @Test func jumpForwardStringReturnsDeterministicText() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a" "b""#)
-        var matcher = grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let jump = matcher.jumpForwardString()
         #expect(!jump.isEmpty)
     }
 
-    @Test func stopTokensPropertyAccess() {
+    @Test func stopTokensPropertyAccess() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compiledJSON
+        let compiled = await compiler.compiledJSON
         let matcher = Grammar.Matcher(compiled)
         _ = matcher.stopTokenIDs
     }
 
-    @Test func debugDescriptionIsAvailable() {
+    @Test func debugDescriptionIsAvailable() async {
         let tokenizer = makeSimpleTokenizer()
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compiledJSON
+        let compiled = await compiler.compiledJSON
         let matcher = Grammar.Matcher(compiled)
         #expect(!matcher.debugDescription.isEmpty)
     }
 
-    @Test func customStopTokensOverride() {
+    @Test func customStopTokensOverride() async {
         let tokenizer = TokenizerInfo(encodedVocab: ["a", "b", "c"])
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizer)
-        let compiled = compiler.compile(Grammar(ebnf: #"root ::= "a""#))
+        let compiled = await compiler.compile(Grammar(ebnf: #"root ::= "a""#))
         let matcher = Grammar.Matcher(compiled, stopTokens: [1], terminatesWithoutStopToken: true)
         #expect(matcher.stopTokenIDs == [1])
     }
 
-    @Test func batchBitmaskIndexing() {
+    @Test func batchBitmaskIndexing() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        var matcher = grammar.matcher(for: tokenizer)
+        let matcher = await grammar.matcher(for: tokenizer)
         var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 1, vocabSize: 3)
         _ = matcher.fillNextTokenBitmask(&bitmask, index: 0)
         #expect(bitmask.storage.count == bitmask.wordsPerBatch)
     }
 
-    @Test func rejectsAfterTermination() {
+    @Test func rejectsAfterTermination() async {
         let tokenizer = makeSimpleTokenizer()
         let grammar = Grammar(ebnf: #"root ::= "a""#)
-        var matcher = grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
+        let matcher = await grammar.matcher(for: tokenizer, terminatesWithoutStopToken: true)
         let acceptedA = matcher.accept(0)
         #expect(acceptedA)
         #expect(matcher.isTerminated)

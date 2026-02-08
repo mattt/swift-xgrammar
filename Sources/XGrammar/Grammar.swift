@@ -141,9 +141,9 @@ public struct Grammar: @unchecked Sendable {
     }
 
     /// Compiles this grammar for a specific tokenizer.
-    public func compiled(for tokenizerInfo: TokenizerInfo) -> Grammar.Compiled {
+    public func compiled(for tokenizerInfo: TokenizerInfo) async -> Grammar.Compiled {
         let compiler = Grammar.Compiler(tokenizerInfo: tokenizerInfo)
-        return compiler.compile(self)
+        return await compiler.compile(self)
     }
 
     /// Creates a matcher for this grammar with a specific tokenizer.
@@ -151,8 +151,8 @@ public struct Grammar: @unchecked Sendable {
         for tokenizerInfo: TokenizerInfo,
         stopTokens: [Int32]? = nil,
         terminatesWithoutStopToken: Bool = false
-    ) -> Grammar.Matcher {
-        compiled(for: tokenizerInfo)
+    ) async -> Grammar.Matcher {
+        await compiled(for: tokenizerInfo)
             .matcher(
                 stopTokens: stopTokens,
                 terminatesWithoutStopToken: terminatesWithoutStopToken
