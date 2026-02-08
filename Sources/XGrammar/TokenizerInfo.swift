@@ -1,24 +1,17 @@
 import Cxgrammar
+import CxxStdlib
 import Foundation
+
+typealias CxxTokenizerInfo = xgrammar.TokenizerInfo
+typealias CxxVocabType = xgrammar.VocabType
 
 /// Tokenizer vocabulary and metadata used for grammar compilation and matching.
 public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
-    let handle: Handle
-
-    /// ARC-managed wrapper around the opaque C handle.
-    final class Handle: @unchecked Sendable {
-        let pointer: OpaquePointer
-        init(_ pointer: OpaquePointer) { self.pointer = pointer }
-        deinit { xgrammar_tokenizer_info_destroy(pointer) }
-    }
-
-    init(handle: Handle) {
-        self.handle = handle
-    }
+    var raw: CxxTokenizerInfo
 
     /// Vocabulary information used by the grammar compiler.
     public struct Vocabulary: @unchecked Sendable {
-        fileprivate let handle: Handle
+        fileprivate let raw: CxxTokenizerInfo
 
         /// The encoding strategy for vocabulary tokens.
         public enum Encoding: Sendable, CaseIterable, Equatable, CustomStringConvertible {
@@ -26,22 +19,24 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
             case byteFallback
             case byteLevel
 
-            var cValue: xgrammar_vocab_type {
+            var cxxValue: CxxVocabType {
                 switch self {
                 case .raw:
-                    return XGRAMMAR_VOCAB_RAW
+                    return .RAW
                 case .byteFallback:
-                    return XGRAMMAR_VOCAB_BYTE_FALLBACK
+                    return .BYTE_FALLBACK
                 case .byteLevel:
-                    return XGRAMMAR_VOCAB_BYTE_LEVEL
+                    return .BYTE_LEVEL
                 }
             }
 
-            init(_ cValue: xgrammar_vocab_type) {
-                switch cValue {
-                case XGRAMMAR_VOCAB_BYTE_FALLBACK:
+            init(_ cxxValue: CxxVocabType) {
+                switch cxxValue {
+                case .RAW:
+                    self = .raw
+                case .BYTE_FALLBACK:
                     self = .byteFallback
-                case XGRAMMAR_VOCAB_BYTE_LEVEL:
+                case .BYTE_LEVEL:
                     self = .byteLevel
                 default:
                     self = .raw
@@ -62,27 +57,22 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
 
         /// The encoding strategy used for vocabulary tokens.
         public var encoding: Encoding {
-            Encoding(xgrammar_tokenizer_info_vocab_type(handle.pointer))
+            Encoding(raw.GetVocabType())
         }
 
         /// The reported vocabulary size.
         public var size: Int {
-            Int(xgrammar_tokenizer_info_vocab_size(handle.pointer))
+            Int(raw.GetVocabSize())
         }
 
         /// The decoded vocabulary strings.
         public var decoded: [String] {
-            let count = Int(xgrammar_tokenizer_info_decoded_vocab_count(handle.pointer))
             var result: [String] = []
+            let count = Int(xgrammar.bridging.TokenizerInfoDecodedVocabCount(raw))
             result.reserveCapacity(count)
-            for index in 0 ..< count {
+            for index in 0..<count {
                 result.append(
-                    consumeCString(
-                        xgrammar_tokenizer_info_decoded_vocab_at(
-                            handle.pointer,
-                            Int32(index)
-                        )
-                    )
+                    String(xgrammar.bridging.TokenizerInfoDecodedVocabAt(raw, Int32(index)))
                 )
             }
             return result
@@ -90,25 +80,25 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
 
         /// Lazily decodes vocabulary strings as a sequence.
         public var decodedSequence: AnySequence<String> {
-            AnySequence(DecodedSequence(handle: handle))
+            AnySequence(DecodedSequence(raw: raw))
         }
 
         private struct DecodedSequence: Sequence {
-            let handle: Handle
+            let raw: CxxTokenizerInfo
 
             func makeIterator() -> Iterator {
-                Iterator(handle: handle)
+                Iterator(raw: raw)
             }
         }
 
         private struct Iterator: IteratorProtocol {
-            let handle: Handle
+            let raw: CxxTokenizerInfo
             let count: Int
             var index: Int
 
-            init(handle: Handle) {
-                self.handle = handle
-                self.count = Int(xgrammar_tokenizer_info_decoded_vocab_count(handle.pointer))
+            init(raw: CxxTokenizerInfo) {
+                self.raw = raw
+                self.count = Int(xgrammar.bridging.TokenizerInfoDecodedVocabCount(raw))
                 self.index = 0
             }
 
@@ -117,36 +107,38 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
                     return nil
                 }
                 defer { index += 1 }
-                return consumeCString(
-                    xgrammar_tokenizer_info_decoded_vocab_at(handle.pointer, Int32(index))
-                )
+                return String(xgrammar.bridging.TokenizerInfoDecodedVocabAt(raw, Int32(index)))
             }
         }
     }
 
+    init(raw: CxxTokenizerInfo) {
+        self.raw = raw
+    }
+
     /// A human-readable metadata description.
     public var description: String {
-        consumeCString(xgrammar_tokenizer_info_dump_metadata(handle.pointer))
+        String(raw.DumpMetadata())
     }
 
     /// Whether tokenization requires a prefix space.
     public var addPrefixSpace: Bool {
-        xgrammar_tokenizer_info_add_prefix_space(handle.pointer)
+        raw.GetAddPrefixSpace()
     }
 
     /// Vocabulary metadata.
     public var vocabulary: Vocabulary {
-        Vocabulary(handle: handle)
+        Vocabulary(raw: raw)
     }
 
     /// Stop token IDs detected from the vocabulary or provided explicitly.
     public var stopTokenIDs: [Int32] {
-        let count = Int(xgrammar_tokenizer_info_stop_token_ids_count(handle.pointer))
         var result: [Int32] = []
+        let count = Int(xgrammar.bridging.TokenizerInfoStopTokenIdsCount(raw))
         result.reserveCapacity(count)
-        for index in 0 ..< count {
+        for index in 0..<count {
             result.append(
-                xgrammar_tokenizer_info_stop_token_id_at(handle.pointer, Int32(index))
+                xgrammar.bridging.TokenizerInfoStopTokenIdAt(raw, Int32(index))
             )
         }
         return result
@@ -154,12 +146,12 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
 
     /// Special token IDs detected from the vocabulary.
     public var specialTokenIDs: [Int32] {
-        let count = Int(xgrammar_tokenizer_info_special_token_ids_count(handle.pointer))
         var result: [Int32] = []
+        let count = Int(xgrammar.bridging.TokenizerInfoSpecialTokenIdsCount(raw))
         result.reserveCapacity(count)
-        for index in 0 ..< count {
+        for index in 0..<count {
             result.append(
-                xgrammar_tokenizer_info_special_token_id_at(handle.pointer, Int32(index))
+                xgrammar.bridging.TokenizerInfoSpecialTokenIdAt(raw, Int32(index))
             )
         }
         return result
@@ -167,7 +159,7 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
 
     /// Detects tokenizer metadata from a Hugging Face backend string.
     public static func detectHuggingFaceMetadata(from backendString: String) -> String {
-        consumeCString(xgrammar_tokenizer_info_detect_metadata_from_hf(backendString))
+        String(CxxTokenizerInfo.DetectMetadataFromHF(std.string(backendString)))
     }
 
     /// Creates tokenizer info from an encoded vocabulary.
@@ -185,13 +177,14 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
         stopTokenIDs: [Int32]? = nil,
         addPrefixSpace: Bool = false
     ) {
+        let encodedStrings = encodedVocab.map { std.string($0) }
         let stopTokens = stopTokenIDs ?? []
-        let ptr = withCStringArray(encodedVocab) { vocabPtr, vocabCount in
+        self.raw = encodedStrings.withUnsafeBufferPointer { encodedBuffer in
             stopTokens.withUnsafeBufferPointer { stopBuffer in
-                xgrammar_tokenizer_info_create(
-                    vocabPtr,
-                    vocabCount,
-                    encoding.cValue,
+                xgrammar.bridging.CreateTokenizerInfo(
+                    encodedBuffer.baseAddress,
+                    Int32(encodedBuffer.count),
+                    encoding.cxxValue,
                     Int32(vocabularySize ?? 0),
                     vocabularySize != nil,
                     stopBuffer.baseAddress,
@@ -201,7 +194,6 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
                 )
             }
         }
-        self.handle = Handle(ptr!)
     }
 
     /// Creates tokenizer info from serialized JSON data.
@@ -209,35 +201,36 @@ public struct TokenizerInfo: @unchecked Sendable, CustomStringConvertible {
         guard let json = String(data: jsonData, encoding: .utf8) else {
             throw XGrammarError.invalidJSON("Invalid UTF-8 data.")
         }
-        var errorKind = XGRAMMAR_ERROR_NONE
-        var errorMessage: UnsafeMutablePointer<CChar>?
-        guard
-            let ptr = xgrammar_tokenizer_info_create_from_serialized_json(
-                json,
-                &errorKind,
-                &errorMessage
-            )
-        else {
-            let message = consumeCString(errorMessage)
-            throw makeXGrammarError(kind: errorKind, message: message)
+        var result = CxxTokenizerInfo(xgrammar.NullObj())
+        var error = std.string()
+        var errorKind = xgrammar.bridging.ErrorKind.none
+        let ok = xgrammar.bridging.TokenizerInfoDeserializeJSON(
+            std.string(json),
+            &result,
+            &error,
+            &errorKind
+        )
+        if !ok {
+            throw makeXGrammarError(kind: errorKind, message: String(error))
         }
-        self.handle = Handle(ptr)
+        self.raw = result
     }
 
     /// Creates tokenizer info from vocab strings and serialized metadata.
     public init(encodedVocab: [String], metadata: String) {
-        let ptr = withCStringArray(encodedVocab) { vocabPtr, vocabCount in
-            xgrammar_tokenizer_info_create_from_vocab_and_metadata(
-                vocabPtr,
-                vocabCount,
-                metadata
+        let encodedStrings = encodedVocab.map { std.string($0) }
+        let rawInfo = encodedStrings.withUnsafeBufferPointer { buffer in
+            xgrammar.bridging.TokenizerInfoFromVocabAndMetadata(
+                buffer.baseAddress,
+                Int32(buffer.count),
+                std.string(metadata)
             )
         }
-        self.handle = Handle(ptr!)
+        self.raw = rawInfo
     }
 
     /// Serializes tokenizer info to JSON data.
     public var jsonData: Data {
-        Data(consumeCString(xgrammar_tokenizer_info_serialize_json(handle.pointer)).utf8)
+        return Data(String(raw.SerializeJSON()).utf8)
     }
 }

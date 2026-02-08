@@ -1,4 +1,3 @@
-import Cxgrammar
 import Testing
 
 @testable import XGrammar
@@ -8,12 +7,12 @@ struct ErrorTests {
     @Test func errorDescriptionsMatchMessages() {
         let message = "message"
         let cases: [XGrammarError] = [
-            makeXGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_VERSION, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_DESERIALIZE_FORMAT, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_STRUCTURAL_TAG, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_INVALID_JSON_SCHEMA, message: message),
-            makeXGrammarError(kind: XGRAMMAR_ERROR_UNKNOWN, message: message),
+            .deserializeVersion(message),
+            .deserializeFormat(message),
+            .invalidJSON(message),
+            .invalidStructuralTag(message),
+            .invalidJSONSchema(message),
+            .nativeError(message),
         ]
 
         for error in cases {
