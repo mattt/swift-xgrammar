@@ -33,7 +33,7 @@ lint: lint-swift lint-cpp
 
 # Lint C/C++ bridge formatting
 lint-cpp:
-	$(CLANG_FORMAT) --dry-run --Werror $(CPP_SOURCES)
+	$(CLANG_FORMAT) -style=file --dry-run --Werror $(CPP_SOURCES)
 
 # Lint Swift formatting
 lint-swift:

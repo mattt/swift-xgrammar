@@ -40,8 +40,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-swift-${{ matrix.swift }}-spm-
 
-      - name: Lint
-        run: make lint
+      - name: Lint Swift
+        run: make lint-swift
+
+      - name: Lint C/C++ (clang-format)
+        if: ${{ matrix.xcode == '26.0' }}
+        run: make lint-cpp
         env:
           CLANG_FORMAT: xcrun clang-format
 
