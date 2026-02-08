@@ -32,10 +32,7 @@ let package = Package(
         ),
         .testTarget(
             name: "XGrammarTests",
-            dependencies: ["XGrammar"],
-            swiftSettings: [
-                .interoperabilityMode(.Cxx)
-            ]
+            dependencies: ["XGrammar"]
         ),
     ],
     cxxLanguageStandard: .cxx17
