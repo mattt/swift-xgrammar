@@ -1,5 +1,9 @@
 import Testing
 
+#if canImport(CoreML)
+    import CoreML
+#endif
+
 @testable import XGrammar
 
 @Suite("TokenBitmask Tests")
@@ -53,4 +57,17 @@ struct TokenBitmaskTests {
         #expect(bitmask.isTokenAllowed(0, batchIndex: 0))
         #expect(!bitmask.isTokenAllowed(0, batchIndex: 1))
     }
+
+    #if canImport(CoreML)
+        @available(macOS 15.0, iOS 18.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *)
+        @Test func masksCorrespondingTensorRows() async {
+            var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 2, vocabSize: 3)
+            bitmask.storage = [0b001, 0b110]
+            let logits = MLTensor(shape: [2, 4], scalars: (1 ... 8).map(Float.init))
+
+            let masked = await bitmask.masking(logits).shapedArray(of: Float.self)
+            #expect(masked.shape == [2, 4])
+            #expect(Array(masked.scalars) == [1, -.infinity, -.infinity, 4, -.infinity, 6, 7, 8])
+        }
+    #endif
 }
