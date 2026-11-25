@@ -86,13 +86,12 @@ extension Grammar {
                     logits.count >= targetVocabSize,
                     "Logits length is smaller than vocab size."
                 )
-                guard !storage.isEmpty else { return }
+                maskRow(&logits, offset: 0, batchIndex: 0, count: min(targetVocabSize, self.vocabSize))
+            }
 
-                let limit = min(targetVocabSize, self.vocabSize)
-                for tokenId in 0 ..< limit {
-                    if !isTokenAllowed(tokenId, batchIndex: 0) {
-                        logits[tokenId] = -Float.infinity
-                    }
+            private func maskRow(_ logits: inout [Float], offset: Int, batchIndex: Int, count: Int) {
+                for tokenID in 0 ..< count where !isTokenAllowed(tokenID, batchIndex: batchIndex) {
+                    logits[offset + tokenID] = -Float.infinity
                 }
             }
 
@@ -219,7 +218,7 @@ extension Grammar {
                     handle,
                     base,
                     Int32(rowCount),
-                    Int32(index)
+                    0  // The bridge receives only the selected row.
                 )
             }
         }
@@ -269,6 +268,10 @@ extension Grammar.Matcher: CustomDebugStringConvertible {
         /// Returns a new tensor with disallowed token logits
         /// set to negative infinity.
         ///
+        /// For logits shaped `[batchSize, rowWidth]` with `rowWidth >= vocabSize`,
+        /// each row uses the corresponding mask. Columns past the vocabulary
+        /// size keep their original values.
+        ///
         /// - Parameter logits: The logits tensor to mask.
         /// - Returns: A new tensor with the same shape as `logits`,
         ///   where disallowed tokens have been set to `-Float.infinity`.
@@ -276,7 +279,14 @@ extension Grammar.Matcher: CustomDebugStringConvertible {
         public func masking(_ logits: MLTensor) async -> MLTensor {
             let shaped = await logits.shapedArray(of: Float.self)
             var scalars = Array(shaped.scalars)
-            maskLogits(&scalars, vocabSize: vocabSize)
+            if shaped.shape.count == 2, shaped.shape[0] == batchSize, shaped.shape[1] >= vocabSize {
+                let rowWidth = shaped.shape[1]
+                for row in 0 ..< batchSize {
+                    maskRow(&scalars, offset: row * rowWidth, batchIndex: row, count: vocabSize)
+                }
+            } else {
+                maskLogits(&scalars)
+            }
             return MLTensor(shape: shaped.shape, scalars: scalars)
         }
     }

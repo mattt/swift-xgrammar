@@ -149,11 +149,15 @@ struct MatcherTests {
 
     @Test func batchBitmaskIndexing() async throws {
         let tokenizer = try makeSimpleTokenizer()
-        let grammar = Grammar(ebnf: #"root ::= "a""#)
+        let grammar = Grammar(ebnf: #"root ::= "a" "b""#)
         let matcher = try await grammar.matcher(for: tokenizer)
-        var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 1, vocabSize: 3)
+        var bitmask = Grammar.Matcher.TokenBitmask(batchSize: 2, vocabSize: 3)
         _ = matcher.fillNextTokenBitmask(&bitmask, index: 0)
-        #expect(bitmask.storage.count == bitmask.wordsPerBatch)
+        let accepted = matcher.accept(0)
+        #expect(accepted)
+        _ = matcher.fillNextTokenBitmask(&bitmask, index: 1)
+        #expect(allowedTokenIndices(bitmask, vocabSize: 3, batchIndex: 0) == [0])
+        #expect(allowedTokenIndices(bitmask, vocabSize: 3, batchIndex: 1) == [1])
     }
 
     @Test func rejectsAfterTermination() async throws {
